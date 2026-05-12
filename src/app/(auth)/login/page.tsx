@@ -1,0 +1,181 @@
+'use client'
+
+import { useState } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import { createClient } from '@/lib/supabase/client'
+import { cn } from '@/lib/utils'
+
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+      <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4"/>
+      <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z" fill="#34A853"/>
+      <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z" fill="#FBBC05"/>
+      <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58Z" fill="#EA4335"/>
+    </svg>
+  )
+}
+
+export default function LoginPage() {
+  const router = useRouter()
+  const [email, setEmail]       = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading]   = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
+
+  const supabase = createClient()
+
+  async function handleLogin() {
+    if (!email.trim() || !password) {
+      toast.error('Preenche email e senha.')
+      return
+    }
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+      if (error) {
+        toast.error(
+          error.message === 'Invalid login credentials'
+            ? 'Email ou senha incorretos.'
+            : 'Caiu a internet aqui. Tenta de novo num instantinho?'
+        )
+        return
+      }
+      router.push('/matches')
+      router.refresh()
+    } catch {
+      toast.error('Algo deu errado. Tenta de novo.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleGoogle() {
+    setGoogleLoading(true)
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${location.origin}/auth/callback`,
+        },
+      })
+      if (error) toast.error('Não conseguimos conectar com o Google. Tenta de novo.')
+    } catch {
+      toast.error('Algo deu errado. Tenta de novo.')
+    } finally {
+      setGoogleLoading(false)
+    }
+  }
+
+  const inputCls = cn(
+    'w-full px-4 py-3 rounded-xl border border-[#E7DDC4] bg-cream-50',
+    'font-body text-sm text-ink-800 placeholder:text-ink-300',
+    'outline-none transition-all duration-150',
+    'focus:border-green-500 focus:ring-4 focus:ring-green-500/20',
+  )
+
+  return (
+    <div className="w-full max-w-[440px]">
+      <div className="bg-white rounded-3xl shadow-[var(--sh-3)] px-8 py-10">
+
+        {/* Header */}
+        <div className="text-center mb-8">
+          <Image
+            src="/logo/trocai-mark.svg"
+            width={48} height={48}
+            alt="trocai"
+            className="mx-auto mb-5"
+          />
+          <p className="text-[11px] font-semibold tracking-[0.08em] uppercase text-green-600 mb-2">
+            BEM-VINDO DE VOLTA
+          </p>
+          <h1 className="font-display font-bold text-[28px] tracking-tight text-ink-800">
+            Entra na tua conta
+          </h1>
+        </div>
+
+        {/* Google OAuth */}
+        <button
+          onClick={handleGoogle}
+          disabled={googleLoading}
+          className={cn(
+            'w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl',
+            'border border-[#E7DDC4] bg-white font-semibold text-sm text-ink-800',
+            'hover:bg-cream-50 hover:border-ink-200 transition-all duration-150',
+            'disabled:opacity-50 disabled:cursor-not-allowed',
+          )}
+        >
+          <GoogleIcon />
+          {googleLoading ? 'Redirecionando…' : 'Entrar com Google'}
+        </button>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3 my-5">
+          <div className="flex-1 h-px bg-[#E7DDC4]" />
+          <span className="text-xs text-ink-300 font-medium">ou</span>
+          <div className="flex-1 h-px bg-[#E7DDC4]" />
+        </div>
+
+        {/* Email + password */}
+        <div className="flex flex-col gap-3">
+          <div>
+            <label className="block text-xs font-semibold text-ink-600 mb-1.5 tracking-wide">
+              Email
+            </label>
+            <input
+              type="email"
+              placeholder="tu@exemplo.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleLogin()}
+              className={inputCls}
+              autoComplete="email"
+            />
+          </div>
+          <div>
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="text-xs font-semibold text-ink-600 tracking-wide">Senha</label>
+              <Link href="/login/forgot" className="text-xs text-green-600 hover:underline">
+                Esqueci a senha
+              </Link>
+            </div>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleLogin()}
+              className={inputCls}
+              autoComplete="current-password"
+            />
+          </div>
+        </div>
+
+        {/* Submit */}
+        <button
+          onClick={handleLogin}
+          disabled={loading}
+          className={cn(
+            'mt-5 w-full flex items-center justify-center py-3 rounded-xl',
+            'bg-green-500 text-white font-semibold text-sm',
+            'shadow-[var(--sh-2)] hover:bg-green-600 active:bg-green-700',
+            'transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed',
+          )}
+        >
+          {loading ? 'Entrando…' : 'Entrar'}
+        </button>
+
+        {/* Switch to signup */}
+        <p className="text-center text-sm text-ink-400 mt-6">
+          Ainda não tem conta?{' '}
+          <Link href="/signup" className="text-green-600 font-semibold hover:underline">
+            Criar conta
+          </Link>
+        </p>
+      </div>
+    </div>
+  )
+}
