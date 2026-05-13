@@ -9,6 +9,9 @@
  * (service role key is needed to bypass RLS on insert).
  */
 
+// Seed script doesn't use Realtime — stub WebSocket so Node < 22 doesn't error
+;(globalThis as any).WebSocket = class {}
+
 import { createClient } from '@supabase/supabase-js'
 import * as fs from 'fs'
 import * as path from 'path'

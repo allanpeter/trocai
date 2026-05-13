@@ -33,18 +33,21 @@ export function CityAutocomplete({ defaultValue = '', placeholder = 'Ex: São Pa
   const [selected, setSelected]   = useState(!!defaultValue)
   const debounceRef               = useRef<ReturnType<typeof setTimeout> | null>(null)
   const containerRef              = useRef<HTMLDivElement>(null)
+  const inputRef                  = useRef<HTMLInputElement>(null)
 
   const search = useCallback(async (q: string) => {
     if (q.length < 2) { setResults([]); setOpen(false); return }
 
     setLoading(true)
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('cities')
       .select('id, name, state_code, state_name, lat, lng, is_capital')
-      .or(`name.ilike.${q}%,name.ilike.% ${q}%`)
+      .ilike('name', `%${q}%`)
       .order('is_capital', { ascending: false })
+      .order('name', { ascending: true })
       .limit(8)
 
+    if (error) console.error('[CityAutocomplete] search error:', error)
     setResults((data as City[]) ?? [])
     setOpen(true)
     setLoading(false)
@@ -120,11 +123,18 @@ export function CityAutocomplete({ defaultValue = '', placeholder = 'Ex: São Pa
         </svg>
 
         <input
+          ref={inputRef}
           type="text"
           placeholder={placeholder}
           value={query}
           onChange={e => handleChange(e.target.value)}
-          onFocus={() => { if (results.length > 0) setOpen(true) }}
+          onFocus={() => {
+            if (selected) {
+              inputRef.current?.select()
+            } else if (results.length > 0) {
+              setOpen(true)
+            }
+          }}
           className={cn(inputCls, 'pl-9')}
           autoComplete="off"
         />

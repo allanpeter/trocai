@@ -3,6 +3,33 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 
+interface ProfileUpdate {
+  full_name: string | null
+  bio: string | null
+  city?: string | null
+  state?: string | null
+  city_id?: string | null
+  city_name?: string | null
+  state_code?: string | null
+  state_name?: string | null
+  lat?: number | null
+  lng?: number | null
+}
+
+export async function saveProfile(update: ProfileUpdate) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Não autenticado')
+
+  const { error } = await supabase
+    .from('profiles')
+    .update(update)
+    .eq('id', user.id)
+
+  if (error) throw error
+  revalidatePath('/profile')
+}
+
 export async function rateUser(ratedId: string, score: number, comment: string) {
   if (score < 1 || score > 5) throw new Error('Pontuação inválida')
 

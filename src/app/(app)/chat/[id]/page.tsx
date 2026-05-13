@@ -6,6 +6,14 @@ interface Props {
   params: Promise<{ id: string }>
 }
 
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
 export default async function ChatThreadPage({ params }: Props) {
   const { id } = await params
   const supabase = await createClient()
@@ -25,19 +33,12 @@ export default async function ChatThreadPage({ params }: Props) {
 
   const otherId = chat.user1_id === user.id ? chat.user2_id : chat.user1_id
 
-  const { data: otherProfile } = await supabase
-    .from('profiles')
-    .select('id, username, avatar_url, city')
-    .eq('id', otherId)
-    .single()
-
-  // Initial messages (last 50)
-  const { data: messages } = await supabase
-    .from('messages')
-    .select('id, sender_id, content, read, created_at')
-    .eq('chat_id', id)
-    .order('created_at', { ascending: true })
-    .limit(50)
+  const [{ data: myProfile }, { data: otherProfile }, { data: messages }, { data: rawSpots }] = await Promise.all([
+    supabase.from('profiles').select('lat, lng').eq('id', user.id).single(),
+    supabase.from('profiles').select('id, username, avatar_url, city, lat, lng').eq('id', otherId).single(),
+    supabase.from('messages').select('id, sender_id, content, read, created_at').eq('chat_id', id).order('created_at', { ascending: true }).limit(50),
+    supabase.from('trade_spots').select('id, name, type, address, city_name, state_code, lat, lng').eq('verified', true),
+  ])
 
   // Mark messages from the other user as read
   await supabase
@@ -47,12 +48,36 @@ export default async function ChatThreadPage({ params }: Props) {
     .eq('read', false)
     .neq('sender_id', user.id)
 
+  // Sort spots by distance from midpoint between the two users (fallback: popularity order)
+  const myLat = myProfile?.lat
+  const myLng = myProfile?.lng
+  const otherLat = otherProfile?.lat
+  const otherLng = otherProfile?.lng
+
+  const tradeSpots = (rawSpots ?? []).map(spot => {
+    let distanceKm: number | null = null
+    if (myLat != null && myLng != null && otherLat != null && otherLng != null) {
+      const midLat = (myLat + otherLat) / 2
+      const midLng = (myLng + otherLng) / 2
+      distanceKm = Math.round(haversineKm(midLat, midLng, spot.lat, spot.lng))
+    } else if (myLat != null && myLng != null) {
+      distanceKm = Math.round(haversineKm(myLat, myLng, spot.lat, spot.lng))
+    }
+    return { ...spot, distanceKm }
+  }).sort((a, b) => {
+    if (a.distanceKm == null && b.distanceKm == null) return 0
+    if (a.distanceKm == null) return 1
+    if (b.distanceKm == null) return -1
+    return a.distanceKm - b.distanceKm
+  })
+
   return (
     <ChatThread
       chatId={id}
       currentUserId={user.id}
       otherUser={otherProfile ?? { id: otherId, username: 'Utilizador', avatar_url: null, city: null }}
       initialMessages={messages ?? []}
+      tradeSpots={tradeSpots}
     />
   )
 }

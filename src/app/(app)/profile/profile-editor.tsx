@@ -4,10 +4,10 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/client'
 import { CityAutocomplete } from '@/components/city-autocomplete'
 import type { CitySelection } from '@/components/city-autocomplete'
 import type { Profile } from '@/lib/types'
+import { saveProfile } from './actions'
 
 type EditableProfile = Pick<
   Profile,
@@ -15,12 +15,12 @@ type EditableProfile = Pick<
 >
 
 export function ProfileEditor({ profile }: { profile: EditableProfile }) {
-  const router   = useRouter()
-  const supabase = createClient()
+  const router = useRouter()
 
   const [fullName, setFullName]   = useState(profile.full_name ?? '')
   const [bio, setBio]             = useState(profile.bio ?? '')
   const [citySel, setCitySel]     = useState<CitySelection | null>(null)
+  const [cityTouched, setCityTouched] = useState(false)
   const [saving, setSaving]       = useState(false)
   const [dirty, setDirty]         = useState(false)
 
@@ -30,48 +30,46 @@ export function ProfileEditor({ profile }: { profile: EditableProfile }) {
 
   function handleCitySelect(city: CitySelection | null) {
     setCitySel(city)
+    setCityTouched(true)
     setDirty(true)
   }
 
   async function handleSave() {
     setSaving(true)
     try {
-      const update: Record<string, unknown> = {
+      const update: Parameters<typeof saveProfile>[0] = {
         full_name: fullName.trim() || null,
         bio:       bio.trim()      || null,
       }
 
-      if (citySel) {
-        update.city       = citySel.city_name
-        update.state      = citySel.state_code
-        update.city_id    = citySel.city_id
-        update.city_name  = citySel.city_name
-        update.state_code = citySel.state_code
-        update.state_name = citySel.state_name
-        update.lat        = citySel.lat
-        update.lng        = citySel.lng
-      } else if (citySel === null && dirty) {
-        // User cleared the city field explicitly
-        update.city       = null
-        update.state      = null
-        update.city_id    = null
-        update.city_name  = null
-        update.state_code = null
-        update.state_name = null
-        update.lat        = null
-        update.lng        = null
+      if (cityTouched) {
+        if (citySel) {
+          update.city       = citySel.city_name
+          update.state      = citySel.state_code
+          update.city_id    = citySel.city_id
+          update.city_name  = citySel.city_name
+          update.state_code = citySel.state_code
+          update.state_name = citySel.state_name
+          update.lat        = citySel.lat
+          update.lng        = citySel.lng
+        } else {
+          update.city       = null
+          update.state      = null
+          update.city_id    = null
+          update.city_name  = null
+          update.state_code = null
+          update.state_name = null
+          update.lat        = null
+          update.lng        = null
+        }
       }
 
-      const { error } = await supabase
-        .from('profiles')
-        .update(update)
-        .eq('id', profile.id)
-
-      if (error) throw error
+      await saveProfile(update)
       toast.success('Perfil atualizado!')
       setDirty(false)
       router.refresh()
-    } catch {
+    } catch (err) {
+      console.error('[ProfileEditor] save error:', err)
       toast.error('Não foi possível salvar. Tente de novo.')
     } finally {
       setSaving(false)

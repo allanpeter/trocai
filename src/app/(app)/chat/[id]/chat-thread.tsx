@@ -21,19 +21,38 @@ interface OtherUser {
   city: string | null
 }
 
+interface TradeSpot {
+  id: string
+  name: string
+  type: string
+  address: string | null
+  city_name: string
+  state_code: string
+  lat: number
+  lng: number
+  distanceKm: number | null
+}
+
+const SPOT_TYPE_LABEL: Record<string, string> = {
+  shopping: '🛍️', parque: '🌳', praca: '🏛️', cafeteria: '☕',
+  universidade: '🎓', biblioteca: '📚', mercado: '🛒', evento: '🎉', outro: '📍',
+}
+
 interface Props {
   chatId: string
   currentUserId: string
   otherUser: OtherUser
   initialMessages: Message[]
+  tradeSpots: TradeSpot[]
 }
 
-export function ChatThread({ chatId, currentUserId, otherUser, initialMessages }: Props) {
+export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, tradeSpots }: Props) {
   const supabase   = createClient()
-  const [messages, setMessages] = useState<Message[]>(initialMessages)
-  const [text, setText]         = useState('')
-  const [sending, setSending]   = useState(false)
-  const [, startTransition]     = useTransition()
+  const [messages, setMessages]     = useState<Message[]>(initialMessages)
+  const [text, setText]             = useState('')
+  const [sending, setSending]       = useState(false)
+  const [showSpots, setShowSpots]   = useState(false)
+  const [, startTransition]         = useTransition()
   const bottomRef  = useRef<HTMLDivElement>(null)
   const inputRef   = useRef<HTMLInputElement>(null)
 
@@ -113,6 +132,31 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages }
       setSending(false)
       inputRef.current?.focus()
     }
+  }
+
+  async function handleSendSpot(spot: TradeSpot) {
+    setShowSpots(false)
+    const content = JSON.stringify({ _spot: true, id: spot.id, name: spot.name, type: spot.type, address: spot.address, city_name: spot.city_name, state_code: spot.state_code, lat: spot.lat, lng: spot.lng })
+    const optimisticId = `opt-${Date.now()}`
+    const optimistic: Message = { id: optimisticId, sender_id: currentUserId, content, read: false, created_at: new Date().toISOString() }
+    setMessages(prev => [...prev, optimistic])
+    setSending(true)
+    try {
+      const { data, error } = await supabase.from('messages').insert({ chat_id: chatId, sender_id: currentUserId, content }).select('id, sender_id, content, read, created_at').single()
+      if (error) throw error
+      setMessages(prev => prev.map(m => m.id === optimisticId ? data : m))
+    } catch {
+      setMessages(prev => prev.filter(m => m.id !== optimisticId))
+    } finally {
+      setSending(false)
+    }
+  }
+
+  function parseSpot(content: string): TradeSpot | null {
+    try {
+      const obj = JSON.parse(content)
+      return obj._spot ? obj : null
+    } catch { return null }
   }
 
   function groupByDate(msgs: Message[]) {
@@ -204,9 +248,10 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages }
                 const prev  = group.messages[i - 1]
                 const showTail = !prev || prev.sender_id !== msg.sender_id
 
+                const spot = parseSpot(msg.content)
+
                 return (
                   <div key={msg.id} className={cn('flex', isMe ? 'justify-end' : 'justify-start')}>
-                    {/* Other user avatar on first message of a run */}
                     {!isMe && showTail ? (
                       <div className="w-7 h-7 rounded-full bg-green-500 flex items-center justify-center text-white font-display font-bold text-xs shrink-0 mr-2 self-end mb-0.5">
                         {otherUser.username[0].toUpperCase()}
@@ -215,24 +260,46 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages }
                       <div className="w-7 mr-2 shrink-0" />
                     ) : null}
 
-                    <div className={cn(
-                      'max-w-[75%] flex flex-col',
-                      isMe ? 'items-end' : 'items-start'
-                    )}>
-                      <div className={cn(
-                        'px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed',
-                        isMe
-                          ? 'bg-green-500 text-white rounded-br-sm'
-                          : 'bg-white border border-[#E7DDC4] text-ink-800 rounded-bl-sm',
-                        isOpt && 'opacity-60',
-                      )}>
-                        {msg.content}
-                      </div>
+                    <div className={cn('max-w-[75%] flex flex-col', isMe ? 'items-end' : 'items-start')}>
+                      {spot ? (
+                        <a
+                          href={`https://www.google.com/maps?q=${spot.lat},${spot.lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={cn(
+                            'rounded-2xl overflow-hidden border transition-opacity',
+                            isMe ? 'border-green-400 rounded-br-sm' : 'border-[#E7DDC4] rounded-bl-sm',
+                            isOpt && 'opacity-60',
+                          )}
+                        >
+                          <div className={cn('px-3.5 pt-2.5 pb-1 text-xs font-semibold uppercase tracking-wide', isMe ? 'bg-green-600 text-green-100' : 'bg-cream-100 text-ink-400')}>
+                            Sugestão de encontro
+                          </div>
+                          <div className={cn('px-3.5 py-2.5', isMe ? 'bg-green-500 text-white' : 'bg-white text-ink-800')}>
+                            <div className="flex items-center gap-2">
+                              <span className="text-base">{SPOT_TYPE_LABEL[spot.type] ?? '📍'}</span>
+                              <span className="font-semibold text-sm">{spot.name}</span>
+                            </div>
+                            {spot.address && (
+                              <p className={cn('text-xs mt-1', isMe ? 'text-green-100' : 'text-ink-400')}>{spot.address}</p>
+                            )}
+                            <p className={cn('text-xs mt-0.5 font-medium', isMe ? 'text-green-200' : 'text-ink-300')}>
+                              {spot.city_name}, {spot.state_code} · Ver no Maps →
+                            </p>
+                          </div>
+                        </a>
+                      ) : (
+                        <div className={cn(
+                          'px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed',
+                          isMe ? 'bg-green-500 text-white rounded-br-sm' : 'bg-white border border-[#E7DDC4] text-ink-800 rounded-bl-sm',
+                          isOpt && 'opacity-60',
+                        )}>
+                          {msg.content}
+                        </div>
+                      )}
                       <span className="text-[10px] text-ink-300 mt-0.5 px-1">
                         {formatTime(msg.created_at)}
-                        {isMe && !isOpt && (
-                          <span className="ml-1">{msg.read ? '✓✓' : '✓'}</span>
-                        )}
+                        {isMe && !isOpt && <span className="ml-1">{msg.read ? '✓✓' : '✓'}</span>}
                       </span>
                     </div>
                   </div>
@@ -245,8 +312,56 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages }
         <div ref={bottomRef} />
       </div>
 
+      {/* Spot picker */}
+      {showSpots && (
+        <div className="bg-white border-t border-[#E7DDC4] shrink-0 max-h-64 overflow-y-auto">
+          <div className="px-4 py-2 flex items-center justify-between border-b border-[#E7DDC4]">
+            <span className="text-xs font-semibold text-ink-600 uppercase tracking-wide">Sugerir local de encontro</span>
+            <button onClick={() => setShowSpots(false)} className="text-ink-300 hover:text-ink-600">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          {tradeSpots.length === 0 ? (
+            <p className="px-4 py-4 text-sm text-ink-400">Nenhum local cadastrado ainda.</p>
+          ) : (
+            tradeSpots.map(spot => (
+              <button
+                key={spot.id}
+                onClick={() => handleSendSpot(spot)}
+                className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-cream-100 transition-colors border-b border-[#E7DDC4] last:border-0"
+              >
+                <span className="text-lg shrink-0 mt-0.5">{SPOT_TYPE_LABEL[spot.type] ?? '📍'}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-ink-800 truncate">{spot.name}</p>
+                  {spot.address && <p className="text-xs text-ink-400 truncate">{spot.address}</p>}
+                  <p className="text-xs text-ink-300">
+                    {spot.city_name}, {spot.state_code}
+                    {spot.distanceKm != null && <span className="ml-1.5 text-green-600 font-medium">~{spot.distanceKm} km do centro</span>}
+                  </p>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+
       {/* Input bar */}
       <div className="px-4 lg:px-6 py-3 bg-white border-t border-[#E7DDC4] shrink-0 flex items-center gap-3">
+        <button
+          onClick={() => setShowSpots(v => !v)}
+          title="Sugerir local de encontro"
+          className={cn(
+            'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-150',
+            showSpots ? 'bg-green-100 text-green-600' : 'text-ink-300 hover:text-ink-600 hover:bg-cream-100',
+          )}
+        >
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+          </svg>
+        </button>
+
         <input
           ref={inputRef}
           type="text"
