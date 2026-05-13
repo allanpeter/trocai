@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { CityAutocomplete } from '@/components/city-autocomplete'
+import type { CitySelection } from '@/components/city-autocomplete'
 import type { Album } from '@/lib/types'
 
 interface Props {
@@ -18,21 +20,30 @@ export function OnboardingClient({ userId, albums }: Props) {
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(
     albums.length === 1 ? albums[0].id : null
   )
-  const [city, setCity]       = useState('')
+  const [citySelection, setCitySelection] = useState<CitySelection | null>(null)
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
 
   async function handleStart() {
     if (!selectedAlbum) {
-      toast.error('Escolhe um álbum para começar.')
+      toast.error('Escolha um álbum para começar.')
       return
     }
     setLoading(true)
     try {
-      if (city.trim()) {
+      if (citySelection) {
         const { error } = await supabase
           .from('profiles')
-          .update({ city: city.trim() })
+          .update({
+            city:       citySelection.city_name,
+            state:      citySelection.state_code,
+            city_id:    citySelection.city_id,
+            city_name:  citySelection.city_name,
+            state_code: citySelection.state_code,
+            state_name: citySelection.state_name,
+            lat:        citySelection.lat,
+            lng:        citySelection.lng,
+          })
           .eq('id', userId)
         if (error) throw error
       }
@@ -60,10 +71,10 @@ export function OnboardingClient({ userId, albums }: Props) {
             BORA COMEÇAR
           </p>
           <h1 className="font-display font-bold text-[32px] tracking-tight text-ink-800">
-            Qual álbum vais colecionar?
+            Qual álbum você vai colecionar?
           </h1>
           <p className="text-ink-400 text-sm mt-2">
-            Escolhe o álbum e começa a registar as tuas figurinhas.
+            Escolha o álbum e comece a registrar suas figurinhas.
           </p>
         </div>
 
@@ -83,7 +94,6 @@ export function OnboardingClient({ userId, albums }: Props) {
                     : 'border-[#E7DDC4] bg-white hover:border-ink-200 shadow-[var(--sh-1)]'
                 )}
               >
-                {/* Album cover placeholder */}
                 <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center shrink-0">
                   <span className="text-white font-display font-extrabold text-xl">
                     {album.year.toString().slice(2)}
@@ -115,24 +125,15 @@ export function OnboardingClient({ userId, albums }: Props) {
           })}
         </div>
 
-        {/* City input */}
+        {/* City autocomplete */}
         <div className="mb-8">
           <label className="block text-xs font-semibold text-ink-600 mb-1.5 tracking-wide">
             Cidade <span className="font-normal text-ink-300">(opcional — melhora os matches)</span>
           </label>
-          <input
-            type="text"
-            placeholder="Ex: São Paulo, Lisboa, Buenos Aires…"
-            value={city}
-            onChange={e => setCity(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleStart()}
-            className={cn(
-              'w-full px-4 py-3 rounded-xl border border-[#E7DDC4] bg-white',
-              'font-body text-sm text-ink-800 placeholder:text-ink-300',
-              'outline-none transition-all duration-150',
-              'focus:border-green-500 focus:ring-4 focus:ring-green-500/20',
-            )}
-          />
+          <CityAutocomplete onSelect={setCitySelection} />
+          <p className="text-xs text-ink-400 mt-1.5">
+            Usamos a cidade para encontrar pessoas próximas. Nunca mostramos sua localização exata.
+          </p>
         </div>
 
         {/* CTA */}
@@ -146,7 +147,7 @@ export function OnboardingClient({ userId, albums }: Props) {
             'transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed',
           )}
         >
-          {loading ? 'A preparar…' : 'Começar a colecionar'}
+          {loading ? 'Preparando…' : 'Começar a colecionar'}
         </button>
       </div>
     </div>

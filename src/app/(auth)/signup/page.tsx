@@ -91,7 +91,7 @@ export default function SignupPage() {
         router.push('/onboarding')
         router.refresh()
       } else {
-        toast.success('Quase lá! Verifica o teu email para confirmar a conta.')
+        toast.success('Quase lá! Verifique seu email para confirmar a conta.')
         router.push('/login')
       }
     } catch {
@@ -141,7 +141,7 @@ export default function SignupPage() {
             COMEÇA A TROCAR
           </p>
           <h1 className="font-display font-bold text-[28px] tracking-tight text-ink-800">
-            Cria a tua conta
+            Crie sua conta
           </h1>
         </div>
 
@@ -249,7 +249,7 @@ export default function SignupPage() {
 
         {/* Switch to login */}
         <p className="text-center text-sm text-ink-400 mt-5">
-          Já tens conta?{' '}
+          Já tem conta?{' '}
           <Link href="/login" className="text-green-600 font-semibold hover:underline">
             Entrar
           </Link>

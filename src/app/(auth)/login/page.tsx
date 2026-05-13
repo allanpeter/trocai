@@ -93,7 +93,7 @@ export default function LoginPage() {
             BEM-VINDO DE VOLTA
           </p>
           <h1 className="font-display font-bold text-[28px] tracking-tight text-ink-800">
-            Entra na tua conta
+            Entre na sua conta
           </h1>
         </div>
 

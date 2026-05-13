@@ -1,7 +1,11 @@
-export default function SearchPage() {
-  return (
-    <div className="p-8">
-      <p className="font-body text-ink-500">Buscar — em breve</p>
-    </div>
-  )
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { SearchClient } from './search-client'
+
+export default async function SearchPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  return <SearchClient currentUserId={user.id} />
 }

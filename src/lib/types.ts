@@ -6,11 +6,40 @@ export interface Profile {
   full_name: string | null
   city: string | null
   state: string | null
+  city_id: string | null
+  city_name: string | null
+  state_code: string | null
+  state_name: string | null
+  lat: number | null
+  lng: number | null
   avatar_url: string | null
   bio: string | null
   rating: number
   trades_count: number
   created_at: string
+}
+
+export interface City {
+  id: string
+  name: string
+  state_code: string
+  state_name: string
+  lat: number
+  lng: number
+  is_capital: boolean
+}
+
+export interface TradeSpot {
+  id: string
+  name: string
+  type: 'shopping' | 'praca' | 'parque' | 'cafeteria' | 'universidade' | 'biblioteca' | 'mercado' | 'evento' | 'outro'
+  address: string | null
+  city_name: string
+  state_code: string
+  lat: number
+  lng: number
+  verified: boolean
+  popularity: number
 }
 
 export interface Album {
@@ -77,6 +106,22 @@ export interface MatchResult {
   they_have_you_need: number
   you_have_they_need: number
   overlap_score: number
+}
+
+/** Returned by find_matches_v2() — includes distance and composite score */
+export interface MatchResultV2 {
+  user_id: string
+  username: string
+  city_name: string | null
+  state_code: string | null
+  avatar_url: string | null
+  rating: number
+  trades_count: number
+  they_have_you_need: number
+  you_have_they_need: number
+  overlap_score: number
+  distance_km: number | null
+  match_score: number
 }
 
 /** Chat with the other user's profile joined */

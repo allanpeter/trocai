@@ -1,30 +1,34 @@
 import { cn } from '@/lib/utils'
-import type { MatchResult } from '@/lib/types'
+import type { MatchResultV2 } from '@/lib/types'
 
 interface MatchCardProps {
-  match: MatchResult
+  match: MatchResultV2
   isPending?: boolean
   onInitiateChat?: () => void
 }
 
-function AvatarCircle({ name, color, online = false }: { name: string; color?: string; online?: boolean }) {
+function AvatarCircle({ name, color }: { name: string; color?: string }) {
   return (
-    <div className="relative shrink-0">
-      <div
-        className="w-11 h-11 rounded-full flex items-center justify-center text-white font-display font-bold text-base"
-        style={{ background: color ?? '#0FA958' }}
-      >
-        {name[0].toUpperCase()}
-      </div>
-      {online && (
-        <span className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full ring-2 ring-cream-100" />
-      )}
+    <div
+      className="w-11 h-11 rounded-full flex items-center justify-center text-white font-display font-bold text-base shrink-0"
+      style={{ background: color ?? '#0FA958' }}
+    >
+      {name[0].toUpperCase()}
     </div>
   )
 }
 
+function formatDistance(km: number | null): string | null {
+  if (km === null) return null
+  if (km < 1) return '< 1 km'
+  if (km < 10) return `${km.toFixed(1)} km`
+  return `${Math.round(km)} km`
+}
+
 export function MatchCard({ match, isPending = false, onInitiateChat }: MatchCardProps) {
   const stars = Math.round(match.rating)
+  const dist  = formatDistance(match.distance_km)
+
   return (
     <div
       className={cn(
@@ -33,13 +37,21 @@ export function MatchCard({ match, isPending = false, onInitiateChat }: MatchCar
         'hover:border-green-300 hover:shadow-[var(--sh-2)] hover:-translate-y-px'
       )}
     >
-      <AvatarCircle name={match.username} online />
+      <AvatarCircle name={match.username} />
 
       <div className="flex-1 min-w-0">
-        <div className="font-semibold text-[15px] text-ink-800 truncate">
-          {match.username}
-          {match.city && (
-            <span className="font-normal text-ink-400"> · {match.city}</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-semibold text-[15px] text-ink-800 truncate">
+            {match.username}
+          </span>
+          {match.city_name && (
+            <span className="flex items-center gap-1 text-xs text-ink-400 shrink-0">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+              {match.city_name}{match.state_code ? `, ${match.state_code}` : ''}
+              {dist && <span className="text-green-600 font-medium"> · {dist}</span>}
+            </span>
           )}
         </div>
         <div className="text-xs text-ink-400 mt-0.5">

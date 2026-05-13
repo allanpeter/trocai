@@ -11,21 +11,24 @@ export default async function MatchesPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('city')
+    .select('city, city_name, state_code')
     .eq('id', user.id)
     .single()
 
-  const { data: matches, error } = await supabase.rpc('find_matches', {
+  const { data: matches, error } = await supabase.rpc('find_matches_v2', {
     p_user_id:  user.id,
     p_album_id: COPA_ALBUM_ID,
-    p_city:     null,
     p_limit:    50,
   })
+
+  const userCity = profile?.city_name ?? profile?.city ?? null
+  const userState = profile?.state_code ?? null
 
   return (
     <MatchesList
       matches={matches ?? []}
-      userCity={profile?.city ?? null}
+      userCity={userCity}
+      userState={userState}
       hasError={!!error}
     />
   )
