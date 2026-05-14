@@ -21,6 +21,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const initial = username?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? '?'
 
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-cream-100">
+        <main className="max-w-[1180px] mx-auto px-5 lg:px-10 py-8">
+          {children}
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="flex min-h-screen bg-cream-100">
       <Sidebar username={username} avatarUrl={avatarUrl} initial={initial} />
