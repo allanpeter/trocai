@@ -220,16 +220,16 @@ export default function LandingPage() {
             </p>
           </div>
           {[
-            { title: 'Produto', links: ['Como funciona', 'Álbuns', 'App mobile', 'Status'] },
-            { title: 'Comunidade', links: ['Discord', 'Blog', 'Histórias', 'Embaixadores'] },
-            { title: 'Legal', links: ['Termos', 'Privacidade', 'Cookies', 'Contato'] },
+            { title: 'Produto', links: ['Como funciona', 'Álbuns', 'App mobile', 'Status'], hrefs: ['#como', '#', '#', '#'] },
+            { title: 'Comunidade', links: ['Discord', 'Blog', 'Histórias', 'Embaixadores'], hrefs: ['#', '#', '#', '#'] },
+            { title: 'Legal', links: ['Termos', 'Privacidade', 'Cookies', 'Contato'], hrefs: ['#', '/privacidade', '#', '#'] },
           ].map(col => (
             <div key={col.title}>
               <h4 className="text-xs font-bold tracking-[0.08em] uppercase text-white mb-4">{col.title}</h4>
               <ul className="flex flex-col gap-2.5">
-                {col.links.map(l => (
+                {col.links.map((l, i) => (
                   <li key={l}>
-                    <a href="#" className="text-sm text-ink-200 hover:text-white transition-colors">{l}</a>
+                    <a href={col.hrefs[i]} className="text-sm text-ink-200 hover:text-white transition-colors">{l}</a>
                   </li>
                 ))}
               </ul>
