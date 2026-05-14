@@ -1,11 +1,15 @@
 'use client'
 
-import { useState, useTransition, useMemo } from 'react'
+import { useState, useTransition, useMemo, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { MatchCard } from '@/components/match-card'
+import { AdBanner } from '@/components/ad-banner'
 import { startChat } from './actions'
 import type { MatchResultV2 } from '@/lib/types'
+
+const AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_SLOT_MATCHES ?? ''
+const AD_EVERY = 5
 
 const RADIUS_OPTIONS = [
   { label: '10 km',    value: 10 },
@@ -191,13 +195,17 @@ export function MatchesList({ matches, userCity, userState, hasError }: Props) {
       {/* Match cards */}
       {filtered.length > 0 && (
         <div className="flex flex-col gap-3">
-          {filtered.map(match => (
-            <MatchCard
-              key={match.user_id}
-              match={match}
-              isPending={pendingId === match.user_id}
-              onInitiateChat={() => handleChat(match.user_id)}
-            />
+          {filtered.map((match, i) => (
+            <Fragment key={match.user_id}>
+              <MatchCard
+                match={match}
+                isPending={pendingId === match.user_id}
+                onInitiateChat={() => handleChat(match.user_id)}
+              />
+              {(i + 1) % AD_EVERY === 0 && (
+                <AdBanner slot={AD_SLOT} format="horizontal" className="rounded-xl overflow-hidden" />
+              )}
+            </Fragment>
           ))}
         </div>
       )}

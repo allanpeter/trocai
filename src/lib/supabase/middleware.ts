@@ -1,9 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PROTECTED_PREFIX = '/matches /album /search /chat /profile /onboarding'
-  .split(' ')
-
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -34,7 +31,15 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const pathname = request.nextUrl.pathname
-  const isProtected = PROTECTED_PREFIX.some(p => pathname.startsWith(p))
+
+  // /profile/[username] is public (SEO) — only /profile itself is protected
+  const isProtected =
+    pathname.startsWith('/matches') ||
+    pathname.startsWith('/album') ||
+    pathname.startsWith('/search') ||
+    pathname.startsWith('/chat') ||
+    pathname === '/profile' ||
+    pathname.startsWith('/onboarding')
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone()

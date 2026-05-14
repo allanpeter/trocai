@@ -1,13 +1,43 @@
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { startChat } from '../../matches/actions'
 import { RatingForm } from '@/components/rating-form'
+import { AdBanner } from '@/components/ad-banner'
 import { cn } from '@/lib/utils'
 
 interface Props {
   params: Promise<{ username: string }>
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { username } = await params
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?username=eq.${username}&select=username,full_name,city,state,bio,rating,trades_count`,
+    {
+      headers: {
+        apikey:        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
+      },
+      next: { revalidate: 3600 },
+    }
+  )
+  const profiles = await res.json()
+  const p = profiles[0]
+  if (!p) return { title: 'Perfil não encontrado' }
+
+  const title = `@${p.username} · trocai.app`
+  const description = p.bio
+    || `${p.full_name || '@' + p.username} troca figurinhas da Copa 2026${p.city ? ` em ${p.city}` : ''}. ${p.trades_count} troca${p.trades_count !== 1 ? 's' : ''} concluída${p.trades_count !== 1 ? 's' : ''}.`
+
+  return {
+    title,
+    description,
+    openGraph: { title, description, type: 'profile' },
+    twitter: { card: 'summary', title, description },
+  }
 }
 
 export default async function UserProfilePage({ params }: Props) {
@@ -15,7 +45,6 @@ export default async function UserProfilePage({ params }: Props) {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -24,9 +53,13 @@ export default async function UserProfilePage({ params }: Props) {
     .single()
 
   if (!profile) notFound()
-  if (profile.id === user.id) redirect('/profile')
 
-  // Sticker stats
+  // Redirect own profile to /profile
+  if (user && profile.id === user.id) {
+    const { redirect } = await import('next/navigation')
+    redirect('/profile')
+  }
+
   const { data: userStickers } = await supabase
     .from('user_stickers')
     .select('status, quantity')
@@ -42,7 +75,6 @@ export default async function UserProfilePage({ params }: Props) {
     { have: 0, dupe: 0, need: 0 }
   )
 
-  // Ratings for this profile
   const { data: rawRatings } = await supabase
     .from('ratings')
     .select('id, score, comment, created_at, rater_id')
@@ -52,40 +84,22 @@ export default async function UserProfilePage({ params }: Props) {
 
   const raterIds = (rawRatings ?? []).map(r => r.rater_id)
   const { data: raterProfiles } = raterIds.length > 0
-    ? await supabase
-        .from('profiles')
-        .select('id, username, avatar_url')
-        .in('id', raterIds)
+    ? await supabase.from('profiles').select('id, username, avatar_url').in('id', raterIds)
     : { data: [] }
 
   const raterMap = new Map((raterProfiles ?? []).map(p => [p.id, p]))
+  const ratings = (rawRatings ?? []).map(r => ({ ...r, rater: raterMap.get(r.rater_id) }))
 
-  const ratings = (rawRatings ?? []).map(r => ({
-    ...r,
-    rater: raterMap.get(r.rater_id),
-  }))
-
-  // Has the current user already rated this person?
-  const { data: myRating } = await supabase
-    .from('ratings')
-    .select('id')
-    .eq('rater_id', user.id)
-    .eq('rated_id', profile.id)
-    .is('trade_id', null)
-    .maybeSingle()
-
-  const alreadyRated = !!myRating
+  const alreadyRated = user
+    ? !!(await supabase.from('ratings').select('id').eq('rater_id', user.id).eq('rated_id', profile.id).is('trade_id', null).maybeSingle()).data
+    : false
 
   const stars = Math.round(profile.rating ?? 0)
   const memberSince = new Date(profile.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-
-  function formatDate(iso: string) {
-    return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
-  }
+  const formatDate = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
 
   return (
     <div className="flex flex-col gap-6 max-w-[600px]">
-      {/* Back */}
       <Link href="/search" className="flex items-center gap-1.5 text-sm text-ink-400 hover:text-ink-700 transition-colors w-fit -mb-2">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="m15 18-6-6 6-6"/>
@@ -104,12 +118,8 @@ export default async function UserProfilePage({ params }: Props) {
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <h1 className="font-display font-bold text-2xl text-ink-800 tracking-tight">
-              @{profile.username}
-            </h1>
-            {profile.full_name && (
-              <p className="text-ink-500 text-sm mt-0.5">{profile.full_name}</p>
-            )}
+            <h1 className="font-display font-bold text-2xl text-ink-800 tracking-tight">@{profile.username}</h1>
+            {profile.full_name && <p className="text-ink-500 text-sm mt-0.5">{profile.full_name}</p>}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-sm text-ink-400">
               {profile.city && (
                 <span className="flex items-center gap-1">
@@ -130,9 +140,7 @@ export default async function UserProfilePage({ params }: Props) {
           </div>
         </div>
         {profile.bio && (
-          <p className="mt-4 text-sm text-ink-600 leading-relaxed border-t border-[#E7DDC4] pt-4">
-            {profile.bio}
-          </p>
+          <p className="mt-4 text-sm text-ink-600 leading-relaxed border-t border-[#E7DDC4] pt-4">{profile.bio}</p>
         )}
       </div>
 
@@ -157,42 +165,55 @@ export default async function UserProfilePage({ params }: Props) {
         </div>
       )}
 
-      {/* Chat CTA */}
-      <form action={startChat.bind(null, profile.id)}>
-        <button
-          type="submit"
+      {/* Ad between stats and CTA */}
+      <AdBanner slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_PROFILE ?? ''} format="rectangle" />
+
+      {/* Chat CTA — only for logged in users */}
+      {user ? (
+        <form action={startChat.bind(null, profile.id)}>
+          <button
+            type="submit"
+            className={cn(
+              'w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl',
+              'bg-green-500 text-white font-semibold text-base',
+              'shadow-[var(--sh-2)] hover:bg-green-600 active:bg-green-700 transition-all duration-150',
+            )}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            Conversar com @{profile.username}
+          </button>
+        </form>
+      ) : (
+        <Link
+          href="/signup"
           className={cn(
             'w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl',
-            'bg-green-500 text-white font-semibold text-base',
-            'shadow-[var(--sh-2)] hover:bg-green-600 active:bg-green-700 transition-all duration-150',
+            'bg-green-500 text-white font-semibold text-base text-center',
+            'shadow-[var(--sh-2)] hover:bg-green-600 transition-all duration-150',
           )}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          </svg>
-          Conversar com @{profile.username}
-        </button>
-      </form>
+          Criar conta para conversar
+        </Link>
+      )}
 
-      {/* Rating form */}
-      <div className="bg-white rounded-2xl border border-[#E7DDC4] shadow-[var(--sh-1)] p-5">
-        <h2 className="font-semibold text-base text-ink-800 mb-1">
-          {alreadyRated ? 'Sua avaliação' : 'Avaliar troca'}
-        </h2>
-        {alreadyRated ? (
-          <div className="flex items-center gap-2 py-3">
-            <span className="text-gold-400 text-xl">{'★'.repeat(myRating ? 5 : 0)}</span>
-            <p className="text-sm text-ink-400">Você já avaliou @{profile.username}.</p>
-          </div>
-        ) : (
-          <>
-            <p className="text-sm text-ink-400 mb-4">
-              Você trocou figurinhas com @{profile.username}? Deixe sua avaliação.
-            </p>
-            <RatingForm ratedId={profile.id} ratedUsername={profile.username} />
-          </>
-        )}
-      </div>
+      {/* Rating */}
+      {user && (
+        <div className="bg-white rounded-2xl border border-[#E7DDC4] shadow-[var(--sh-1)] p-5">
+          <h2 className="font-semibold text-base text-ink-800 mb-1">
+            {alreadyRated ? 'Sua avaliação' : 'Avaliar troca'}
+          </h2>
+          {alreadyRated ? (
+            <p className="text-sm text-ink-400 py-3">Você já avaliou @{profile.username}.</p>
+          ) : (
+            <>
+              <p className="text-sm text-ink-400 mb-4">Você trocou figurinhas com @{profile.username}? Deixe sua avaliação.</p>
+              <RatingForm ratedId={profile.id} ratedUsername={profile.username} />
+            </>
+          )}
+        </div>
+      )}
 
       {/* Ratings list */}
       {ratings.length > 0 && (
@@ -204,24 +225,18 @@ export default async function UserProfilePage({ params }: Props) {
             {ratings.map(r => (
               <div key={r.id} className="py-4 first:pt-0 last:pb-0">
                 <div className="flex items-start gap-3">
-                  {/* Rater avatar */}
                   <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white font-display font-bold text-sm shrink-0">
                     {r.rater?.username?.[0]?.toUpperCase() ?? '?'}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold text-sm text-ink-700">
-                        @{r.rater?.username ?? 'anónimo'}
-                      </span>
+                      <span className="font-semibold text-sm text-ink-700">@{r.rater?.username ?? 'anónimo'}</span>
                       <span className="text-[11px] text-ink-300 shrink-0">{formatDate(r.created_at)}</span>
                     </div>
-                    <div className="text-gold-400 text-sm mt-0.5 leading-none">
-                      {'★'.repeat(r.score)}
-                      <span className="text-ink-200">{'★'.repeat(5 - r.score)}</span>
+                    <div className="text-gold-400 text-sm mt-0.5">
+                      {'★'.repeat(r.score)}<span className="text-ink-200">{'★'.repeat(5 - r.score)}</span>
                     </div>
-                    {r.comment && (
-                      <p className="text-sm text-ink-600 mt-1.5 leading-relaxed">{r.comment}</p>
-                    )}
+                    {r.comment && <p className="text-sm text-ink-600 mt-1.5 leading-relaxed">{r.comment}</p>}
                   </div>
                 </div>
               </div>
