@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import { FeedbackModal } from '@/components/feedback-modal'
 
 const TABS = [
   { href: '/matches',  label: 'Matches',  icon: '/icons/match.svg'  },
@@ -50,6 +51,9 @@ export function NavBar() {
           </Link>
         )
       })}
+
+      {/* Feedback tab */}
+      <FeedbackModal variant="mobile" />
 
       {/* Logout tab */}
       <button

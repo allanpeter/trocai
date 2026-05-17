@@ -30,6 +30,15 @@ export default function ContatoPage() {
         </p>
 
         <div className="flex flex-col gap-4">
+          {/* In-app feedback */}
+          <div className="bg-green-50 border border-green-200 rounded-[18px] p-7 flex flex-col gap-2 shadow-[var(--sh-1)]">
+            <p className="text-xs font-bold tracking-[0.08em] uppercase text-green-600">Dentro do app</p>
+            <p className="font-display font-bold text-2xl text-ink-800">Botão Feedback</p>
+            <p className="text-sm text-ink-500">
+              Se você está logado, o jeito mais rápido é usar o botão <strong>Feedback</strong> na barra lateral (desktop) ou no menu inferior (celular). Você pode reportar bugs, enviar sugestões e pedir melhorias diretamente por lá.
+            </p>
+          </div>
+
           {/* Email */}
           <div className="bg-white border border-[#E7DDC4] rounded-[18px] p-7 flex flex-col gap-2 shadow-[var(--sh-1)]">
             <p className="text-xs font-bold tracking-[0.08em] uppercase text-ink-400">E-mail</p>
@@ -62,6 +71,10 @@ export default function ContatoPage() {
           <div className="bg-cream-200 rounded-[18px] p-6 flex flex-col gap-3">
             <p className="text-sm font-semibold text-ink-700">Assuntos específicos</p>
             <ul className="flex flex-col gap-2 text-sm text-ink-500">
+              <li>
+                Dúvidas gerais →{' '}
+                <Link href="/faq" className="text-green-600 underline">Perguntas frequentes</Link>
+              </li>
               <li>
                 Privacidade e LGPD →{' '}
                 <Link href="/privacidade" className="text-green-600 underline">Política de Privacidade</Link>

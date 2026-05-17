@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import { FeedbackModal } from '@/components/feedback-modal'
 
 const NAV_ITEMS = [
   { href: '/matches',  label: 'Matches',   icon: '/icons/match.svg'  },
@@ -71,6 +72,9 @@ export function Sidebar({ username, avatarUrl, initial = '?', notifBell }: Sideb
           )
         })}
       </nav>
+
+      {/* Feedback */}
+      <FeedbackModal />
 
       {/* User footer */}
       <div className="flex items-center gap-2.5 px-3 py-3 bg-white/[0.04] rounded-xl mt-3">

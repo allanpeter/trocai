@@ -2,39 +2,21 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { TestimonialsCarousel } from '@/components/testimonials-carousel'
 
-/* ── Sticker card used in hero collage ─────────────────────────────── */
-function HeroCard({
-  initial, number, name, variant, style,
-}: {
-  initial: string; number: string; name: string
-  variant: 'green' | 'missing' | 'gold' | 'rare'
-  style?: React.CSSProperties
+/* ── Real Panini sticker card for hero collage ──────────────────────── */
+function StickerCard({ src, alt, style, rare }: {
+  src: string; alt: string; style?: React.CSSProperties; rare?: boolean
 }) {
   return (
     <div
-      className={`absolute w-[160px] rounded-[14px] overflow-hidden shadow-[var(--sh-3)] border ${
-        variant === 'rare'
-          ? 'border-2 border-gold-400 animate-shimmer bg-[length:200%_200%]'
-          : 'border-[#E7DDC4] bg-white'
-      }`}
-      style={style}
+      className="absolute rounded-[14px] overflow-hidden transition-all duration-300 hover:scale-[1.06] hover:-translate-y-1.5 cursor-pointer"
+      style={{
+        boxShadow: rare
+          ? '0 0 0 2.5px #F5C518, 0 16px 48px rgba(0,0,0,0.45), 0 0 32px rgba(245,197,24,0.4)'
+          : '0 8px 32px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.15)',
+        ...style,
+      }}
     >
-      <div
-        className={`flex items-center justify-center font-display font-extrabold text-[60px] aspect-[3/4] ${
-          variant === 'green'   ? 'bg-green-600 text-white'       :
-          variant === 'missing' ? 'bg-rare-50 text-rare-400'     :
-          variant === 'gold'    ? 'bg-gold-100 text-gold-700'    :
-                                  'bg-white/60 text-ink-700'
-        }`}
-      >
-        {initial}
-      </div>
-      <div className={`flex justify-between items-center px-3 py-2.5 ${variant === 'rare' ? 'bg-white/90' : 'bg-white'}`}>
-        <span className={`t-num text-xs ${variant === 'missing' ? 'text-rare-400' : variant === 'gold' ? 'text-gold-700' : 'text-green-600'}`}>
-          {number}
-        </span>
-        <span className="font-semibold text-xs text-ink-800">{name}</span>
-      </div>
+      <Image src={src} alt={alt} width={160} height={224} className="w-full object-cover block" />
     </div>
   )
 }
@@ -96,22 +78,33 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Sticker collage */}
-        <div className="relative h-[480px] hidden md:block">
-          <HeroCard initial="M" number="#387" name="Marquinhos" variant="green"
-            style={{ top: 0, left: '20%', transform: 'rotate(-5deg)' }} />
-          <HeroCard initial="?" number="#412" name="—" variant="missing"
-            style={{ top: 80, left: 0, transform: 'rotate(8deg)' }} />
-          <HeroCard initial="N" number="#205" name="Neymar" variant="gold"
-            style={{ top: 140, right: 0, transform: 'rotate(-3deg)' }} />
-          <div
-            className="absolute flex items-center justify-center w-16 h-16 rounded-full bg-ink-800 text-gold-400 font-display font-extrabold text-3xl shadow-[var(--sh-3)] z-10"
-            style={{ top: 300, left: '18%', transform: 'rotate(-12deg)' }}
-          >
-            ⇄
-          </div>
-          <HeroCard initial="V" number="#001 ★" name="Vini Jr" variant="rare"
-            style={{ top: 240, left: '40%', transform: 'rotate(6deg)' }} />
+        {/* Sticker collage — fan spread with real Panini cards */}
+        <div className="relative h-[520px] hidden md:block select-none">
+          {/* Ronaldo — back-left */}
+          <StickerCard
+            src="/stickers/ronaldo.jpg"
+            alt="Cristiano Ronaldo"
+            style={{ width: 148, top: 65, left: 0, transform: 'rotate(-16deg)', zIndex: 10 }}
+          />
+          {/* Mbappé */}
+          <StickerCard
+            src="/stickers/mbappe.jpg"
+            alt="Kylian Mbappé"
+            style={{ width: 153, top: 18, left: 88, transform: 'rotate(-5deg)', zIndex: 20 }}
+          />
+          {/* Messi */}
+          <StickerCard
+            src="/stickers/messi.jpg"
+            alt="Lionel Messi"
+            style={{ width: 153, top: 42, left: 192, transform: 'rotate(5deg)', zIndex: 30 }}
+          />
+          {/* Vini Jr — front, rare/gold glow */}
+          <StickerCard
+            src="/stickers/vinicius-jr.jpg"
+            alt="Vinícius Júnior"
+            style={{ width: 158, top: 68, right: 0, transform: 'rotate(14deg)', zIndex: 40 }}
+            rare
+          />
         </div>
       </section>
 
