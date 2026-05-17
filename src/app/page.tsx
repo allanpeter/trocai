@@ -212,7 +212,7 @@ export default function LandingPage() {
           </div>
           {[
             { title: 'Produto', links: ['Como funciona', 'Álbuns', 'App mobile', 'Status'], hrefs: ['#como', '#', '#', '#'] },
-            { title: 'Comunidade', links: ['Discord', 'Blog', 'Histórias', 'Embaixadores'], hrefs: ['https://discord.gg/uTB2MBEk', '#', '#', '#'] },
+            { title: 'Comunidade', links: ['Blog', 'Histórias', 'Embaixadores'], hrefs: ['#', '#', '#'] },
             { title: 'Legal', links: ['Termos', 'Privacidade', 'Cookies', 'Contato'], hrefs: ['/termos', '/privacidade', '/cookies', '/contato'] },
           ].map(col => (
             <div key={col.title}>
