@@ -61,6 +61,7 @@ interface Props {
 
 export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, hasMore: initialHasMore, activeTrade: initialTrade, tradeSpots }: Props) {
   const supabase   = useRef(createClient()).current
+  const mountId    = useRef(Math.random())
   const [messages, setMessages]     = useState<Message[]>(initialMessages)
   const [text, setText]             = useState('')
   const [sending, setSending]       = useState(false)
@@ -82,7 +83,7 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
   // Supabase Realtime subscription
   useEffect(() => {
     const channel = supabase
-      .channel(`chat:${chatId}`)
+      .channel(`chat:${chatId}:${mountId.current}`)
       .on(
         'postgres_changes',
         {

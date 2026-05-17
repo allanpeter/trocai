@@ -49,15 +49,18 @@ interface Props {
 export function NotificationsBell({ userId, initialCount, initialNotifs }: Props) {
   const supabase  = useRef(createClient()).current
   const panelRef  = useRef<HTMLDivElement>(null)
+  const mountId   = useRef(Math.random())
   const [open, setOpen]         = useState(false)
   const [notifs, setNotifs]     = useState<Notification[]>(initialNotifs)
   const [unread, setUnread]     = useState(initialCount)
   const [, startTransition]     = useTransition()
 
   // Realtime: new notifications
+  // Channel name includes a per-mount ID to avoid Supabase's singleton client
+  // reusing an already-subscribed channel on Strict Mode double-invoke.
   useEffect(() => {
     const channel = supabase
-      .channel(`notifs:${userId}`)
+      .channel(`notifs:${userId}:${mountId.current}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
