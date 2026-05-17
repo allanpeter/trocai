@@ -1,6 +1,3 @@
-/* ── Google Fonts — must come before @import "tailwindcss" ───────────── */
-@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@500;700&display=swap");
-
 @import "tailwindcss";
 
 /* ── Tailwind v4 theme ────────────────────────────────────────────────── */
@@ -77,11 +74,11 @@
   --color-input:               #E7DDC4;
   --color-ring:                #0FA958;
 
-  /* Typography */
-  --font-display: "Bricolage Grotesque", "Arial Narrow", system-ui, sans-serif;
-  --font-body:    "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --font-sans:    "DM Sans", system-ui, -apple-system, sans-serif;
+  /* Typography — CSS vars injected by next/font/google (zero-render-blocking) */
+  --font-display: var(--font-bricolage), "Arial Narrow", system-ui, sans-serif;
+  --font-body:    var(--font-dm-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:    var(--font-jetbrains), ui-monospace, "SF Mono", Menlo, monospace;
+  --font-sans:    var(--font-dm-sans), system-ui, -apple-system, sans-serif;
 
   /* Border radius */
   --radius-sticker: 14px;
@@ -142,9 +139,9 @@
   --border:        #E7DDC4;
   --border-strong: #B5BDCB;
 
-  --font-display: "Bricolage Grotesque", "Arial Narrow", system-ui, sans-serif;
-  --font-body:    "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-display: var(--font-bricolage), "Arial Narrow", system-ui, sans-serif;
+  --font-body:    var(--font-dm-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:    var(--font-jetbrains), ui-monospace, "SF Mono", Menlo, monospace;
 
   --fs-xs: 12px; --fs-sm: 14px; --fs-base: 16px; --fs-md: 18px;
   --fs-lg: 22px; --fs-xl: 28px; --fs-2xl: 36px; --fs-3xl: 48px;

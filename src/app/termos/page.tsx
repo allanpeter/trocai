@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Termos de Uso',
-  description: 'Termos e condições de uso do trocai.app.',
+  description: 'Termos e condições de uso do trocai.',
 }
 
 const UPDATED = '17 de maio de 2026'
@@ -25,7 +25,7 @@ export default function TermosPage() {
       <header className="sticky top-0 z-20 bg-cream-100/85 backdrop-blur-md border-b border-[#E7DDC4]">
         <div className="max-w-[1180px] mx-auto px-8 h-[60px] flex items-center gap-8">
           <Link href="/" className="shrink-0">
-            <Image src="/logo/trocai-logo.svg" width={160} height={48} alt="trocai.app" priority />
+            <Image src="/logo/trocai-logo.svg" width={160} height={48} alt="trocai" priority />
           </Link>
         </div>
       </header>
@@ -39,14 +39,14 @@ export default function TermosPage() {
 
         <Section title="1. Aceitação dos termos">
           <p>
-            Ao criar uma conta ou usar o <strong>trocai.app</strong>, você concorda com estes Termos de Uso.
+            Ao criar uma conta ou usar o <strong>trocai</strong>, você concorda com estes Termos de Uso.
             Se não concordar com algum ponto, não utilize o serviço.
           </p>
         </Section>
 
-        <Section title="2. O que é o trocai.app">
+        <Section title="2. O que é o trocai">
           <p>
-            O trocai.app é uma plataforma gratuita que conecta colecionadores de figurinhas no Brasil para facilitar
+            O trocai é uma plataforma gratuita que conecta colecionadores de figurinhas no Brasil para facilitar
             trocas entre pessoas próximas. Somos um intermediário — a troca em si acontece diretamente entre os usuários.
           </p>
           <p>
@@ -56,7 +56,7 @@ export default function TermosPage() {
 
         <Section title="3. Elegibilidade">
           <p>
-            Para usar o trocai.app você precisa ter pelo menos 13 anos. Menores de 18 anos devem ter autorização
+            Para usar o trocai você precisa ter pelo menos 13 anos. Menores de 18 anos devem ter autorização
             de um responsável legal.
           </p>
         </Section>
@@ -71,7 +71,7 @@ export default function TermosPage() {
         </Section>
 
         <Section title="5. Uso aceitável">
-          <p>Você concorda em usar o trocai.app apenas para:</p>
+          <p>Você concorda em usar o trocai apenas para:</p>
           <ul className="list-disc list-inside flex flex-col gap-2 pl-2">
             <li>Registrar suas figurinhas de coleção de forma honesta.</li>
             <li>Encontrar outros colecionadores e combinar trocas de figurinhas.</li>
@@ -96,7 +96,7 @@ export default function TermosPage() {
 
         <Section title="7. Conteúdo do usuário">
           <p>
-            Ao usar o trocai.app, você pode inserir conteúdo como nome de usuário, foto de perfil, bio e mensagens de chat.
+            Ao usar o trocai, você pode inserir conteúdo como nome de usuário, foto de perfil, bio e mensagens de chat.
             Você mantém a titularidade desse conteúdo, mas nos concede uma licença para exibi-lo e armazená-lo
             conforme necessário para o funcionamento do serviço.
           </p>
@@ -108,7 +108,7 @@ export default function TermosPage() {
 
         <Section title="8. Gratuidade e publicidade">
           <p>
-            O trocai.app é gratuito para todos os usuários. Para se manter, exibimos anúncios discretos via
+            O trocai é gratuito para todos os usuários. Para se manter, exibimos anúncios discretos via
             Google AdSense. Não cobramos assinaturas nem taxas por trocas realizadas.
           </p>
         </Section>
@@ -122,7 +122,7 @@ export default function TermosPage() {
 
         <Section title="10. Limitação de responsabilidade">
           <p>
-            O trocai.app não se responsabiliza por danos decorrentes de trocas não concluídas, acordos descumpridos
+            O trocai não se responsabiliza por danos decorrentes de trocas não concluídas, acordos descumpridos
             entre usuários, perda de dados ou indisponibilidade do serviço. O uso é por conta e risco do usuário.
           </p>
         </Section>
@@ -158,7 +158,7 @@ export default function TermosPage() {
 
       <footer className="bg-ink-900 text-cream-200 px-8 py-8 mt-8">
         <div className="max-w-[1180px] mx-auto flex flex-col sm:flex-row justify-between gap-2 text-xs text-ink-300">
-          <span>© 2026 trocai.app — feito no Brasil</span>
+          <span>© 2026 trocai — feito no Brasil</span>
           <Link href="/" className="hover:text-white transition-colors">Voltar ao início</Link>
         </div>
       </footer>

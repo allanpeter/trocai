@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Política de Cookies',
-  description: 'Como o trocai.app usa cookies e tecnologias similares.',
+  description: 'Como o trocai usa cookies e tecnologias similares.',
 }
 
 const UPDATED = '17 de maio de 2026'
@@ -25,7 +25,7 @@ export default function CookiesPage() {
       <header className="sticky top-0 z-20 bg-cream-100/85 backdrop-blur-md border-b border-[#E7DDC4]">
         <div className="max-w-[1180px] mx-auto px-8 h-[60px] flex items-center gap-8">
           <Link href="/" className="shrink-0">
-            <Image src="/logo/trocai-logo.svg" width={160} height={48} alt="trocai.app" priority />
+            <Image src="/logo/trocai-logo.svg" width={160} height={48} alt="trocai" priority />
           </Link>
         </div>
       </header>
@@ -46,7 +46,7 @@ export default function CookiesPage() {
         </Section>
 
         <Section title="2. Cookies que usamos">
-          <p>O trocai.app utiliza dois tipos de cookies:</p>
+          <p>O trocai utiliza dois tipos de cookies:</p>
 
           <div className="bg-white border border-[#E7DDC4] rounded-[14px] p-5 flex flex-col gap-2">
             <p className="font-semibold text-ink-700">Cookies essenciais</p>
@@ -122,7 +122,7 @@ export default function CookiesPage() {
 
       <footer className="bg-ink-900 text-cream-200 px-8 py-8 mt-8">
         <div className="max-w-[1180px] mx-auto flex flex-col sm:flex-row justify-between gap-2 text-xs text-ink-300">
-          <span>© 2026 trocai.app — feito no Brasil</span>
+          <span>© 2026 trocai — feito no Brasil</span>
           <Link href="/" className="hover:text-white transition-colors">Voltar ao início</Link>
         </div>
       </footer>

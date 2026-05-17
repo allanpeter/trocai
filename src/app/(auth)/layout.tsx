@@ -7,7 +7,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       {/* Minimal nav */}
       <header className="flex items-center justify-between px-6 py-4">
         <Link href="/">
-          <Image src="/logo/trocai-logo.svg" width={120} height={36} alt="trocai.app" />
+          <Image src="/logo/trocai-logo.svg" width={120} height={36} alt="trocai" />
         </Link>
       </header>
 

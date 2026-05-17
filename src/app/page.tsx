@@ -45,9 +45,9 @@ export default function LandingPage() {
 
       {/* ── Nav ───────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-20 bg-cream-100/85 backdrop-blur-md border-b border-[#E7DDC4]">
-        <div className="max-w-[1180px] mx-auto px-8 h-[60px] flex items-center gap-8">
+        <div className="max-w-[1180px] mx-auto px-4 md:px-8 h-[60px] flex items-center gap-8">
           <Link href="/" className="shrink-0">
-            <Image src="/logo/trocai-logo.svg" width={160} height={48} alt="trocai.app" priority />
+            <Image src="/logo/trocai-logo.svg" width={160} height={48} alt="trocai" priority />
           </Link>
           <nav className="hidden md:flex items-center gap-6 ml-6">
             <a href="#como" className="text-sm font-medium text-ink-700 hover:text-green-600 transition-colors">Como funciona</a>
@@ -68,8 +68,9 @@ export default function LandingPage() {
       {/* ── Hero ──────────────────────────────────────────────────────── */}
       <section className="max-w-[1180px] mx-auto px-8 py-20 md:py-24 grid md:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
         <div>
-          <span className="inline-block text-xs font-bold tracking-[0.08em] uppercase text-green-600 bg-green-50 px-3 py-1 rounded-full mb-4">
-            Copa do Mundo 2026 · grátis
+          <span className="inline-flex items-center gap-2 text-xs font-bold tracking-[0.08em] uppercase text-green-600 bg-green-50 px-3 py-1 rounded-full mb-4">
+            Copa do Mundo 2026
+            <span className="bg-green-500 text-white px-2 py-0.5 rounded-full tracking-wide">Grátis</span>
           </span>
           <h1 className="font-display font-extrabold text-[clamp(48px,7vw,88px)] leading-[1.02] tracking-[-0.025em] mb-5">
             Sabe aquela figurinha{' '}
@@ -84,14 +85,14 @@ export default function LandingPage() {
           <p className="text-[19px] text-ink-500 max-w-[480px] leading-relaxed mb-8">
             Talvez ela esteja a poucos quilômetros de você. Cadastre seu álbum, marque as figurinhas que já tem e as que ainda faltam. O sistema encontra pessoas próximas com combinações perfeitas para troca. Depois é só conversar pelo chat e combinar.
           </p>
-          <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex flex-col sm:flex-row items-center gap-4">
             <Link
               href="/signup"
-              className="inline-flex items-center font-semibold text-base px-6 py-3.5 rounded-[14px] bg-green-500 text-white shadow-[var(--sh-3)] hover:bg-green-600 hover:-translate-y-0.5 transition-all duration-200"
+              className="w-full sm:w-auto text-center font-semibold text-base px-6 py-3.5 rounded-[14px] bg-green-500 text-white shadow-[var(--sh-3)] hover:bg-green-600 hover:-translate-y-0.5 transition-all duration-200"
             >
               Bora trocar
             </Link>
-            <span className="text-sm text-ink-400">grátis, sem cadastro pra ver</span>
+            <span className="text-sm text-ink-400"><span className="font-bold text-green-600">Grátis</span> · sem cadastro pra ver</span>
           </div>
         </div>
 
@@ -118,7 +119,7 @@ export default function LandingPage() {
       <section id="como" className="max-w-[1180px] mx-auto px-8 py-20">
         <p className="text-xs font-bold tracking-[0.08em] uppercase text-green-600 mb-2">COMO FUNCIONA</p>
         <h2 className="font-display font-bold text-[clamp(32px,4.5vw,56px)] tracking-tight leading-[1.08] mb-4">
-          Três passos. Simples e rápido.
+          3 passos. Simples e rápido.
         </h2>
         <p className="text-lg text-ink-500 max-w-[600px] mb-12">
           Em poucos minutos você organiza seu álbum e já encontra pessoas próximas para trocar figurinhas.
@@ -205,7 +206,7 @@ export default function LandingPage() {
       <footer className="bg-ink-900 text-cream-200 px-8 pt-16 pb-8 mt-20">
         <div className="max-w-[1180px] mx-auto grid md:grid-cols-[1.4fr_1fr_1fr_1fr] gap-12 mb-12">
           <div>
-            <Image src="/logo/trocai-logo-dark.svg" width={160} height={48} alt="trocai.app" className="mb-4" />
+            <Image src="/logo/trocai-logo-dark.svg" width={160} height={48} alt="trocai" className="mb-4" />
             <p className="text-sm text-ink-200 max-w-[280px] leading-relaxed">
               O álbum de figurinhas, modernizado. Brasileiro, gratuito, feito pra quem ainda lembra do barulhinho do pacotinho.
             </p>
@@ -228,7 +229,7 @@ export default function LandingPage() {
           ))}
         </div>
         <div className="max-w-[1180px] mx-auto border-t border-white/10 pt-6 flex flex-col sm:flex-row justify-between gap-2 text-xs text-ink-300">
-          <span>© 2026 trocai.app — feito no Brasil</span>
+          <span>© 2026 trocai — feito no Brasil</span>
           <span>v1.0 · feito por colecionadores para colecionadores</span>
         </div>
       </footer>

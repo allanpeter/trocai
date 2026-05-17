@@ -6,17 +6,17 @@ import { cn } from '@/lib/utils'
 const TESTIMONIALS = [
   {
     initial: 'J',
-    quote: 'Fechei o álbum em 3 semanas. Achei a #001 do Vini Jr com uma pessoa do bairro — o app simplesmente avisou. Meu filho tava em choque.',
+    quote: 'Fechei o álbum em 3 semanas!! A figurinha do Vini Jr eu achei com uma pessoa do bairro mesmo, o app avisou. Meu filho nao acreditou kkk',
     author: 'Juliana · São Paulo · completou Copa 2026',
   },
   {
     initial: 'C',
-    quote: 'Eu tinha mais de 80 repetidas paradas há meses. Em uma semana troquei quase todas. Não acreditei quando vi quantas pessoas do meu bairro também colecionam.',
+    quote: 'Tinha mais de 80 repetidas guardada ha meses. Em uma semana troquei quase todas. Nem acreditei quantas pessoas do bairro tambem coleciona.',
     author: 'Carlos · Belo Horizonte · 214 trocas realizadas',
   },
   {
     initial: 'M',
-    quote: 'Tentei grupos de WhatsApp pra trocar figurinha, mas era uma bagunça. Aqui o sistema já indica exatamente quem tem o que falta pra mim. Muito mais fácil.',
+    quote: 'Tentei grupo de zap pra trocar mas so bagunça. Aqui o sistema ja indica quem tem o que eu preciso. Muito mais facil, recomendo pra todo mundo!',
     author: 'Marina · Curitiba · completou Brasileirão 2026',
   },
 ]

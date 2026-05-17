@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Contato',
-  description: 'Entre em contato com a equipe do trocai.app.',
+  description: 'Entre em contato com a equipe do trocai.',
 }
 
 const CONTACT = 'allanpeter565@gmail.com'
@@ -15,7 +15,7 @@ export default function ContatoPage() {
       <header className="sticky top-0 z-20 bg-cream-100/85 backdrop-blur-md border-b border-[#E7DDC4]">
         <div className="max-w-[1180px] mx-auto px-8 h-[60px] flex items-center gap-8">
           <Link href="/" className="shrink-0">
-            <Image src="/logo/trocai-logo.svg" width={160} height={48} alt="trocai.app" priority />
+            <Image src="/logo/trocai-logo.svg" width={160} height={48} alt="trocai" priority />
           </Link>
         </div>
       </header>
@@ -51,7 +51,7 @@ export default function ContatoPage() {
               rel="noopener noreferrer"
               className="font-display font-bold text-2xl text-green-600 hover:text-green-700 transition-colors"
             >
-              Discord trocai.app
+              Discord trocai
             </a>
             <p className="text-sm text-ink-400">
               Para sugestões, bugs e papo sobre figurinha — a resposta costuma ser mais rápida por lá.
@@ -81,7 +81,7 @@ export default function ContatoPage() {
 
       <footer className="bg-ink-900 text-cream-200 px-8 py-8 mt-8">
         <div className="max-w-[1180px] mx-auto flex flex-col sm:flex-row justify-between gap-2 text-xs text-ink-300">
-          <span>© 2026 trocai.app — feito no Brasil</span>
+          <span>© 2026 trocai — feito no Brasil</span>
           <Link href="/" className="hover:text-white transition-colors">Voltar ao início</Link>
         </div>
       </footer>

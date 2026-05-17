@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const p = profiles[0]
   if (!p) return { title: 'Perfil não encontrado' }
 
-  const title = `@${p.username} · trocai.app`
+  const title = `@${p.username} · trocai`
   const description = p.bio
     || `${p.full_name || '@' + p.username} troca figurinhas da Copa 2026${(p.city_name ?? p.city) ? ` em ${p.city_name ?? p.city}` : ''}. ${p.trades_count} troca${p.trades_count !== 1 ? 's' : ''} concluída${p.trades_count !== 1 ? 's' : ''}.`
 

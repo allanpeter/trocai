@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Política de Privacidade',
-  description: 'Como o trocai.app coleta, usa e protege seus dados pessoais.',
+  description: 'Como o trocai coleta, usa e protege seus dados pessoais.',
 }
 
 const UPDATED = '13 de maio de 2026'
@@ -25,7 +25,7 @@ export default function PrivacidadePage() {
       <header className="sticky top-0 z-20 bg-cream-100/85 backdrop-blur-md border-b border-[#E7DDC4]">
         <div className="max-w-[1180px] mx-auto px-8 h-[60px] flex items-center gap-8">
           <Link href="/" className="shrink-0">
-            <Image src="/logo/trocai-logo.svg" width={160} height={48} alt="trocai.app" priority />
+            <Image src="/logo/trocai-logo.svg" width={160} height={48} alt="trocai" priority />
           </Link>
         </div>
       </header>
@@ -39,7 +39,7 @@ export default function PrivacidadePage() {
 
         <Section title="1. Quem somos">
           <p>
-            O <strong>trocai.app</strong> é um serviço brasileiro de troca de figurinhas da Copa do Mundo 2026,
+            O <strong>trocai</strong> é um serviço brasileiro de troca de figurinhas da Copa do Mundo 2026,
             operado por pessoa física com sede no Brasil. Para dúvidas, entre em contato pelo e-mail{' '}
             <a href={`mailto:${CONTACT}`} className="text-green-600 underline">{CONTACT}</a>.
           </p>
@@ -59,7 +59,7 @@ export default function PrivacidadePage() {
 
         <Section title="3. Como usamos seus dados">
           <ul className="list-disc list-inside flex flex-col gap-2 pl-2">
-            <li>Criar e manter sua conta no trocai.app.</li>
+            <li>Criar e manter sua conta no trocai.</li>
             <li>Encontrar outros usuários próximos com figurinhas compatíveis para troca.</li>
             <li>Enviar notificações relacionadas ao serviço (novos matches, mensagens no chat).</li>
             <li>Melhorar a plataforma por meio de análise de uso agregada e anônima.</li>
@@ -154,7 +154,7 @@ export default function PrivacidadePage() {
 
       <footer className="bg-ink-900 text-cream-200 px-8 py-8 mt-8">
         <div className="max-w-[1180px] mx-auto flex flex-col sm:flex-row justify-between gap-2 text-xs text-ink-300">
-          <span>© 2026 trocai.app — feito no Brasil</span>
+          <span>© 2026 trocai — feito no Brasil</span>
           <Link href="/" className="hover:text-white transition-colors">Voltar ao início</Link>
         </div>
       </footer>
