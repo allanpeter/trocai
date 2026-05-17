@@ -15,7 +15,7 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username } = await params
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?username=eq.${username}&select=username,full_name,city,state,bio,rating,trades_count`,
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?username=eq.${username}&select=username,full_name,city,city_name,state,state_code,bio,rating,trades_count`,
     {
       headers: {
         apikey:        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = `@${p.username} · trocai.app`
   const description = p.bio
-    || `${p.full_name || '@' + p.username} troca figurinhas da Copa 2026${p.city ? ` em ${p.city}` : ''}. ${p.trades_count} troca${p.trades_count !== 1 ? 's' : ''} concluída${p.trades_count !== 1 ? 's' : ''}.`
+    || `${p.full_name || '@' + p.username} troca figurinhas da Copa 2026${(p.city_name ?? p.city) ? ` em ${p.city_name ?? p.city}` : ''}. ${p.trades_count} troca${p.trades_count !== 1 ? 's' : ''} concluída${p.trades_count !== 1 ? 's' : ''}.`
 
   return {
     title,
@@ -48,7 +48,7 @@ export default async function UserProfilePage({ params }: Props) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, username, full_name, city, state, avatar_url, bio, rating, trades_count, created_at')
+    .select('id, username, full_name, city, state, city_name, state_code, avatar_url, bio, rating, trades_count, created_at')
     .eq('username', username)
     .single()
 
@@ -77,18 +77,12 @@ export default async function UserProfilePage({ params }: Props) {
 
   const { data: rawRatings } = await supabase
     .from('ratings')
-    .select('id, score, comment, created_at, rater_id')
+    .select('id, score, comment, created_at, rater_id, profiles!rater_id(id, username, avatar_url)')
     .eq('rated_id', profile.id)
     .order('created_at', { ascending: false })
     .limit(10)
 
-  const raterIds = (rawRatings ?? []).map(r => r.rater_id)
-  const { data: raterProfiles } = raterIds.length > 0
-    ? await supabase.from('profiles').select('id, username, avatar_url').in('id', raterIds)
-    : { data: [] }
-
-  const raterMap = new Map((raterProfiles ?? []).map(p => [p.id, p]))
-  const ratings = (rawRatings ?? []).map(r => ({ ...r, rater: raterMap.get(r.rater_id) }))
+  const ratings = (rawRatings ?? []) as Array<typeof rawRatings[number] & { profiles: { id: string; username: string; avatar_url: string | null } | null }>
 
   const alreadyRated = user
     ? !!(await supabase.from('ratings').select('id').eq('rater_id', user.id).eq('rated_id', profile.id).is('trade_id', null).maybeSingle()).data
@@ -121,12 +115,13 @@ export default async function UserProfilePage({ params }: Props) {
             <h1 className="font-display font-bold text-2xl text-ink-800 tracking-tight">@{profile.username}</h1>
             {profile.full_name && <p className="text-ink-500 text-sm mt-0.5">{profile.full_name}</p>}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-sm text-ink-400">
-              {profile.city && (
+              {(profile.city_name ?? profile.city) && (
                 <span className="flex items-center gap-1">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
                   </svg>
-                  {profile.city}{profile.state ? `, ${profile.state}` : ''}
+                  {profile.city_name ?? profile.city}
+                  {(profile.state_code ?? profile.state) ? `, ${profile.state_code ?? profile.state}` : ''}
                 </span>
               )}
               <span>Membro desde {memberSince}</span>
@@ -225,12 +220,16 @@ export default async function UserProfilePage({ params }: Props) {
             {ratings.map(r => (
               <div key={r.id} className="py-4 first:pt-0 last:pb-0">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white font-display font-bold text-sm shrink-0">
-                    {r.rater?.username?.[0]?.toUpperCase() ?? '?'}
-                  </div>
+                  {r.profiles?.avatar_url ? (
+                    <Image src={r.profiles.avatar_url} width={32} height={32} alt="" unoptimized className="w-8 h-8 rounded-full object-cover shrink-0" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white font-display font-bold text-sm shrink-0">
+                      {r.profiles?.username?.[0]?.toUpperCase() ?? '?'}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold text-sm text-ink-700">@{r.rater?.username ?? 'anónimo'}</span>
+                      <span className="font-semibold text-sm text-ink-700">@{r.profiles?.username ?? 'anônimo'}</span>
                       <span className="text-[11px] text-ink-300 shrink-0">{formatDate(r.created_at)}</span>
                     </div>
                     <div className="text-gold-400 text-sm mt-0.5">

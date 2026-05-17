@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, useMemo, Fragment } from 'react'
+// radiusIdx derived from activeRadius prop; radius changes navigate via URL
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { MatchCard } from '@/components/match-card'
@@ -21,30 +22,29 @@ const RADIUS_OPTIONS = [
 type SortKey = 'score' | 'distance' | 'overlap'
 
 interface Props {
-  matches: MatchResultV2[]
-  userCity:  string | null
-  userState: string | null
-  hasError:  boolean
+  matches:      MatchResultV2[]
+  userCity:     string | null
+  userState:    string | null
+  hasError:     boolean
+  activeRadius: number | null
+  chatByUser:   Map<string, string>
 }
 
-export function MatchesList({ matches, userCity, userState, hasError }: Props) {
+export function MatchesList({ matches, userCity, userState, hasError, activeRadius, chatByUser }: Props) {
   const router = useRouter()
   const [, startTransition] = useTransition()
-  const [radiusIdx, setRadiusIdx]   = useState(3)          // default: Qualquer
-  const [sortKey, setSortKey]       = useState<SortKey>('score')
-  const [pendingId, setPendingId]   = useState<string | null>(null)
+  const [sortKey, setSortKey] = useState<SortKey>('score')
+  const [pendingId, setPendingId] = useState<string | null>(null)
 
-  const radiusKm = RADIUS_OPTIONS[radiusIdx].value
+  function setRadius(value: number | null) {
+    const url = value !== null ? `?r=${value}` : '/matches'
+    router.push(url)
+  }
+
+  const radiusIdx = RADIUS_OPTIONS.findIndex(o => o.value === activeRadius)
 
   const filtered = useMemo(() => {
-    let list = [...matches]
-
-    // Radius filter (client-side — all matches were fetched without radius)
-    if (radiusKm !== null) {
-      list = list.filter(m => m.distance_km === null || m.distance_km <= radiusKm)
-    }
-
-    // Sort
+    const list = [...matches]
     if (sortKey === 'distance') {
       list.sort((a, b) => {
         if (a.distance_km === null && b.distance_km === null) return 0
@@ -55,10 +55,8 @@ export function MatchesList({ matches, userCity, userState, hasError }: Props) {
     } else if (sortKey === 'overlap') {
       list.sort((a, b) => b.overlap_score - a.overlap_score)
     }
-    // 'score' → already sorted by match_score from DB
-
     return list
-  }, [matches, radiusKm, sortKey])
+  }, [matches, sortKey])
 
   function handleChat(userId: string) {
     setPendingId(userId)
@@ -142,7 +140,7 @@ export function MatchesList({ matches, userCity, userState, hasError }: Props) {
             {RADIUS_OPTIONS.map((opt, i) => (
               <button
                 key={i}
-                onClick={() => setRadiusIdx(i)}
+                onClick={() => setRadius(opt.value)}
                 className={cn(
                   'px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-120',
                   radiusIdx === i
@@ -182,7 +180,7 @@ export function MatchesList({ matches, userCity, userState, hasError }: Props) {
                 Nenhum match em {RADIUS_OPTIONS[radiusIdx].label}
               </p>
               <button
-                onClick={() => setRadiusIdx(3)}
+                onClick={() => setRadius(null)}
                 className="text-sm text-green-600 font-semibold hover:underline"
               >
                 Ver todos os matches
@@ -200,6 +198,7 @@ export function MatchesList({ matches, userCity, userState, hasError }: Props) {
               <MatchCard
                 match={match}
                 isPending={pendingId === match.user_id}
+                existingChatId={chatByUser.get(match.user_id)}
                 onInitiateChat={() => handleChat(match.user_id)}
               />
               {(i + 1) % AD_EVERY === 0 && (

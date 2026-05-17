@@ -33,12 +33,18 @@ export default async function ChatThreadPage({ params }: Props) {
 
   const otherId = chat.user1_id === user.id ? chat.user2_id : chat.user1_id
 
-  const [{ data: myProfile }, { data: otherProfile }, { data: messages }, { data: rawSpots }] = await Promise.all([
-    supabase.from('profiles').select('lat, lng').eq('id', user.id).single(),
-    supabase.from('profiles').select('id, username, avatar_url, city, lat, lng').eq('id', otherId).single(),
-    supabase.from('messages').select('id, sender_id, content, read, created_at').eq('chat_id', id).order('created_at', { ascending: true }).limit(50),
-    supabase.from('trade_spots').select('id, name, type, address, city_name, state_code, lat, lng').eq('verified', true),
+  const [{ data: myProfile }, { data: otherProfile }, { data: messages }, { data: activeTrade }] = await Promise.all([
+    supabase.from('profiles').select('lat, lng, state_code').eq('id', user.id).single(),
+    supabase.from('profiles').select('id, username, avatar_url, city, lat, lng, state_code').eq('id', otherId).single(),
+    supabase.from('messages').select('id, sender_id, content, read, created_at, message_type, metadata').eq('chat_id', id).order('created_at', { ascending: false }).limit(50),
+    supabase.from('trades').select('id, status, initiator_id, partner_id').eq('chat_id', id).not('status', 'eq', 'cancelled').maybeSingle(),
   ])
+
+  const stateFilter = [myProfile?.state_code, otherProfile?.state_code].filter((s): s is string => !!s)
+  const spotsQuery = supabase.from('trade_spots').select('id, name, type, address, city_name, state_code, lat, lng').eq('verified', true)
+  const { data: rawSpots } = stateFilter.length > 0
+    ? await spotsQuery.in('state_code', stateFilter)
+    : await spotsQuery
 
   // Mark messages from the other user as read
   await supabase
@@ -71,12 +77,16 @@ export default async function ChatThreadPage({ params }: Props) {
     return a.distanceKm - b.distanceKm
   })
 
+  const orderedMessages = (messages ?? []).slice().reverse()
+
   return (
     <ChatThread
       chatId={id}
       currentUserId={user.id}
-      otherUser={otherProfile ?? { id: otherId, username: 'Utilizador', avatar_url: null, city: null }}
-      initialMessages={messages ?? []}
+      otherUser={otherProfile ?? { id: otherId, username: 'Usuário', avatar_url: null, city: null }}
+      initialMessages={orderedMessages}
+      hasMore={(messages ?? []).length === 50}
+      activeTrade={activeTrade ?? null}
       tradeSpots={tradeSpots}
     />
   )

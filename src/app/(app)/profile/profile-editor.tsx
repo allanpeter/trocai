@@ -1,13 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { CityAutocomplete } from '@/components/city-autocomplete'
 import type { CitySelection } from '@/components/city-autocomplete'
 import type { Profile } from '@/lib/types'
-import { saveProfile } from './actions'
+import { createClient } from '@/lib/supabase/client'
+import { saveProfile, updateAvatar } from './actions'
 
 type EditableProfile = Pick<
   Profile,
@@ -15,7 +17,9 @@ type EditableProfile = Pick<
 >
 
 export function ProfileEditor({ profile }: { profile: EditableProfile }) {
-  const router = useRouter()
+  const router   = useRouter()
+  const supabase = createClient()
+  const fileRef  = useRef<HTMLInputElement>(null)
 
   const [fullName, setFullName]   = useState(profile.full_name ?? '')
   const [bio, setBio]             = useState(profile.bio ?? '')
@@ -23,6 +27,9 @@ export function ProfileEditor({ profile }: { profile: EditableProfile }) {
   const [cityTouched, setCityTouched] = useState(false)
   const [saving, setSaving]       = useState(false)
   const [dirty, setDirty]         = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url ?? null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
 
   function markDirty(setter: (v: string) => void) {
     return (v: string) => { setter(v); setDirty(true) }
@@ -32,6 +39,42 @@ export function ProfileEditor({ profile }: { profile: EditableProfile }) {
     setCitySel(city)
     setCityTouched(true)
     setDirty(true)
+  }
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const preview = URL.createObjectURL(file)
+    setAvatarPreview(preview)
+    setUploading(true)
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Não autenticado')
+
+      const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg'
+      const path = `${user.id}/avatar.${ext}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, { upsert: true, contentType: file.type })
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
+
+      await updateAvatar(publicUrl)
+      setAvatarUrl(publicUrl)
+      toast.success('Foto atualizada!')
+      router.refresh()
+    } catch (err) {
+      console.error('[ProfileEditor] avatar upload error:', err)
+      toast.error('Não foi possível enviar a foto. Tente de novo.')
+      setAvatarPreview(null)
+    } finally {
+      setUploading(false)
+    }
   }
 
   async function handleSave() {
@@ -101,9 +144,35 @@ export function ProfileEditor({ profile }: { profile: EditableProfile }) {
 
       {/* Avatar + stats card */}
       <div className="flex items-center gap-5 p-5 bg-white rounded-2xl border border-[#E7DDC4] shadow-[var(--sh-1)]">
-        <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center text-white font-display font-extrabold text-2xl shrink-0">
-          {profile.username[0].toUpperCase()}
-        </div>
+        <label className="relative group cursor-pointer shrink-0" title="Trocar foto">
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="sr-only"
+            onChange={handleAvatarChange}
+            disabled={uploading}
+          />
+          {(avatarPreview ?? avatarUrl) ? (
+            <Image
+              src={avatarPreview ?? avatarUrl!}
+              width={64} height={64}
+              alt=""
+              unoptimized
+              className="w-16 h-16 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center text-white font-display font-extrabold text-2xl">
+              {profile.username[0].toUpperCase()}
+            </div>
+          )}
+          <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            {uploading
+              ? <span className="text-white text-[10px] font-semibold">...</span>
+              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            }
+          </div>
+        </label>
         <div className="flex-1 min-w-0">
           <div className="font-display font-bold text-xl text-ink-800">@{profile.username}</div>
           {profile.rating > 0 && (

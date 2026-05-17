@@ -241,7 +241,7 @@ export default function SignupPage() {
 
         {/* Terms */}
         <p className="text-center text-xs text-ink-300 mt-4 leading-relaxed">
-          Ao criar uma conta concordas com os nossos{' '}
+          Ao criar uma conta, você concorda com nossos{' '}
           <Link href="/terms" className="text-ink-500 hover:underline">Termos</Link>
           {' '}e{' '}
           <Link href="/privacy" className="text-ink-500 hover:underline">Privacidade</Link>.

@@ -30,6 +30,21 @@ export async function saveProfile(update: ProfileUpdate) {
   revalidatePath('/profile')
 }
 
+export async function updateAvatar(url: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Não autenticado')
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ avatar_url: url })
+    .eq('id', user.id)
+
+  if (error) throw error
+  revalidatePath('/profile')
+  revalidatePath(`/profile/[username]`, 'page')
+}
+
 export async function rateUser(ratedId: string, score: number, comment: string) {
   if (score < 1 || score > 5) throw new Error('Pontuação inválida')
 
@@ -47,7 +62,7 @@ export async function rateUser(ratedId: string, score: number, comment: string) 
     .is('trade_id', null)
     .maybeSingle()
 
-  if (existing) throw new Error('Já avaliaste este utilizador')
+  if (existing) throw new Error('Você já avaliou este usuário')
 
   const { error } = await supabase
     .from('ratings')

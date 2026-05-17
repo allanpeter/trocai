@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { TestimonialsCarousel } from '@/components/testimonials-carousel'
 
 /* ── Sticker card used in hero collage ─────────────────────────────── */
 function HeroCard({
@@ -71,9 +72,9 @@ export default function LandingPage() {
             Copa do Mundo 2026 · grátis
           </span>
           <h1 className="font-display font-extrabold text-[clamp(48px,7vw,88px)] leading-[1.02] tracking-[-0.025em] mb-5">
-            Tu sabe quem{' '}
+            Sabe aquela figurinha{' '}
             <em className="not-italic text-green-500 relative">
-              tem a #387.
+              impossível de encontrar?
               <span
                 className="absolute left-0 bottom-2 w-full h-2 bg-gold-400 -z-10 rounded"
                 aria-hidden
@@ -81,7 +82,7 @@ export default function LandingPage() {
             </em>
           </h1>
           <p className="text-[19px] text-ink-500 max-w-[480px] leading-relaxed mb-8">
-            Cadastra teu álbum, marca o que tu tem e o que falta. A gente encontra quem mora perto e tem o que tu precisa. Combinou pelo chat, fechou troca.
+            Talvez ela esteja a poucos quilômetros de você. Cadastre seu álbum, marque as figurinhas que já tem e as que ainda faltam. O sistema encontra pessoas próximas com combinações perfeitas para troca. Depois é só conversar pelo chat e combinar.
           </p>
           <div className="flex items-center gap-4 flex-wrap">
             <Link
@@ -117,16 +118,16 @@ export default function LandingPage() {
       <section id="como" className="max-w-[1180px] mx-auto px-8 py-20">
         <p className="text-xs font-bold tracking-[0.08em] uppercase text-green-600 mb-2">COMO FUNCIONA</p>
         <h2 className="font-display font-bold text-[clamp(32px,4.5vw,56px)] tracking-tight leading-[1.08] mb-4">
-          Três passos. Sem mistério.
+          Três passos. Simples e rápido.
         </h2>
         <p className="text-lg text-ink-500 max-w-[600px] mb-12">
-          Não precisa abrir conta pra ver se vale a pena. Tu marca tuas figurinhas em 5 minutos e já vê quem tem o que tu precisa.
+          Em poucos minutos você organiza seu álbum e já encontra pessoas próximas para trocar figurinhas.
         </p>
         <div className="grid md:grid-cols-3 gap-5">
           {[
-            { n: '1', icon: '/icons/album.svg',   title: 'Cadastra teu álbum',   body: 'A gente já tem todas as 640 figurinhas da Copa pré-cadastradas. Tu só escolhe o álbum.' },
-            { n: '2', icon: '/icons/sticker.svg', title: 'Marca o que tu tem',   body: 'Toca em cada figurinha pra marcar como tenho, falta ou repetida. Vai rápido.' },
-            { n: '3', icon: '/icons/swap.svg',    title: 'Encontra e troca',     body: 'A gente cruza tudo e mostra gente perto de ti com o que falta — e que precisa do que tu sobra.' },
+            { n: '1', icon: '/icons/album.svg',   title: 'Escolha seu álbum',          body: 'Todas as figurinhas da Copa já estão cadastradas no sistema. Basta selecionar o álbum e começar.' },
+            { n: '2', icon: '/icons/sticker.svg', title: 'Marque suas figurinhas',      body: 'Indique quais você já tem, quais faltam e quais estão repetidas. Tudo de forma prática e rápida.' },
+            { n: '3', icon: '/icons/swap.svg',    title: 'Encontre pessoas para trocar', body: 'O sistema cruza automaticamente as informações e mostra pessoas próximas que têm as figurinhas que faltam no seu álbum — e procuram pelas que você tem repetidas.' },
           ].map(step => (
             <div key={step.n} className="relative bg-white border border-[#E7DDC4] rounded-[18px] p-7 shadow-[var(--sh-1)] overflow-hidden">
               <span className="absolute top-[-8px] right-4 font-display font-extrabold text-[80px] leading-none text-green-100 select-none">
@@ -148,9 +149,9 @@ export default function LandingPage() {
       <section id="numeros" className="max-w-[1180px] mx-auto px-8 py-12">
         <div className="bg-ink-800 rounded-3xl px-12 py-12 grid md:grid-cols-3 gap-8 text-center">
           {[
-            { val: '147k', lbl: 'colecionadores ativos' },
-            { val: '2.1M', lbl: 'trocas combinadas' },
-            { val: '96%',  lbl: 'encontros confirmados' },
+            { val: '2.3k', lbl: 'colecionadores ativos' },
+            { val: '8.7k', lbl: 'trocas combinadas' },
+            { val: '94%',  lbl: 'encontros confirmados' },
           ].map(s => (
             <div key={s.lbl}>
               <div className="font-display font-extrabold text-[64px] leading-none text-gold-400 tracking-tight">
@@ -162,19 +163,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Testimonial ───────────────────────────────────────────────── */}
+      {/* ── Testimonials ──────────────────────────────────────────────── */}
       <section className="max-w-[1180px] mx-auto px-8 py-12">
-        <div className="bg-green-500 text-white rounded-3xl p-14 grid md:grid-cols-[auto_1fr] gap-8 items-center">
-          <div className="w-24 h-24 bg-ink-800 rounded-full flex items-center justify-center font-display font-extrabold text-4xl text-gold-400 mx-auto md:mx-0 shrink-0">
-            J
-          </div>
-          <div>
-            <p className="font-display font-semibold text-[28px] leading-snug tracking-tight mb-4 text-balance">
-              "Fechei o álbum em 3 semanas. Achei a #001 do Vini Jr com uma pessoa do bairro — o app simplesmente avisou. Meu filho tava em choque."
-            </p>
-            <p className="text-sm opacity-85">Juliana · São Paulo · completou Copa 2026</p>
-          </div>
-        </div>
+        <TestimonialsCarousel />
       </section>
 
       {/* ── FAQ ───────────────────────────────────────────────────────── */}
@@ -194,7 +185,7 @@ export default function LandingPage() {
             { q: 'Funciona em outras coleções, ou só na Copa?',
               a: 'Começamos com a Copa 2026 porque é o mais procurado. Já tá rolando Brasileirão 2026 também. Outras coleções entram conforme demanda.' },
             { q: 'E se eu mudar de cidade?',
-              a: 'Beleza. Tu atualiza tua cidade e a busca de matches já considera quem tá perto. Tua coleção e teu histórico ficam.' },
+              a: 'Beleza. Você atualiza sua cidade e a busca de matches já considera quem tá perto. Sua coleção e seu histórico ficam.' },
           ].map(item => (
             <details
               key={item.q}
@@ -221,8 +212,8 @@ export default function LandingPage() {
           </div>
           {[
             { title: 'Produto', links: ['Como funciona', 'Álbuns', 'App mobile', 'Status'], hrefs: ['#como', '#', '#', '#'] },
-            { title: 'Comunidade', links: ['Discord', 'Blog', 'Histórias', 'Embaixadores'], hrefs: ['#', '#', '#', '#'] },
-            { title: 'Legal', links: ['Termos', 'Privacidade', 'Cookies', 'Contato'], hrefs: ['#', '/privacidade', '#', '#'] },
+            { title: 'Comunidade', links: ['Discord', 'Blog', 'Histórias', 'Embaixadores'], hrefs: ['https://discord.gg/uTB2MBEk', '#', '#', '#'] },
+            { title: 'Legal', links: ['Termos', 'Privacidade', 'Cookies', 'Contato'], hrefs: ['/termos', '/privacidade', '/cookies', '/contato'] },
           ].map(col => (
             <div key={col.title}>
               <h4 className="text-xs font-bold tracking-[0.08em] uppercase text-white mb-4">{col.title}</h4>
@@ -238,7 +229,7 @@ export default function LandingPage() {
         </div>
         <div className="max-w-[1180px] mx-auto border-t border-white/10 pt-6 flex flex-col sm:flex-row justify-between gap-2 text-xs text-ink-300">
           <span>© 2026 trocai.app — feito no Brasil</span>
-          <span>v1.0 · made with verde-amarelo (mas, tipo, com bom senso)</span>
+          <span>v1.0 · feito por colecionadores para colecionadores</span>
         </div>
       </footer>
 

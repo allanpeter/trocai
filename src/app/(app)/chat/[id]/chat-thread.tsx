@@ -3,8 +3,10 @@
 import { useState, useEffect, useRef, useTransition } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import { initiateTrade, confirmTrade, cancelTrade } from './actions'
 
 interface Message {
   id: string
@@ -12,6 +14,8 @@ interface Message {
   content: string
   read: boolean
   created_at: string
+  message_type?: string
+  metadata?: Record<string, unknown> | null
 }
 
 interface OtherUser {
@@ -38,23 +42,37 @@ const SPOT_TYPE_LABEL: Record<string, string> = {
   universidade: '🎓', biblioteca: '📚', mercado: '🛒', evento: '🎉', outro: '📍',
 }
 
+interface Trade {
+  id: string
+  status: string
+  initiator_id: string
+  partner_id: string
+}
+
 interface Props {
   chatId: string
   currentUserId: string
   otherUser: OtherUser
   initialMessages: Message[]
+  hasMore: boolean
+  activeTrade: Trade | null
   tradeSpots: TradeSpot[]
 }
 
-export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, tradeSpots }: Props) {
-  const supabase   = createClient()
+export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, hasMore: initialHasMore, activeTrade: initialTrade, tradeSpots }: Props) {
+  const supabase   = useRef(createClient()).current
   const [messages, setMessages]     = useState<Message[]>(initialMessages)
   const [text, setText]             = useState('')
   const [sending, setSending]       = useState(false)
   const [showSpots, setShowSpots]   = useState(false)
-  const [, startTransition]         = useTransition()
+  const [hasMore, setHasMore]         = useState(initialHasMore)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [trade, setTrade]             = useState<Trade | null>(initialTrade)
+  const [tradeLoading, setTradeLoading] = useState(false)
+  const [, startTransition]           = useTransition()
   const bottomRef  = useRef<HTMLDivElement>(null)
   const inputRef   = useRef<HTMLInputElement>(null)
+  const scrollRef  = useRef<HTMLDivElement>(null)
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -94,7 +112,80 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [chatId, currentUserId, supabase, startTransition])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatId, currentUserId])
+
+  async function loadMore() {
+    if (loadingMore || !hasMore) return
+    const oldest = messages[0]?.created_at
+    if (!oldest) return
+
+    setLoadingMore(true)
+    try {
+      const { data } = await supabase
+        .from('messages')
+        .select('id, sender_id, content, read, created_at')
+        .eq('chat_id', chatId)
+        .lt('created_at', oldest)
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      if (!data || data.length === 0) { setHasMore(false); return }
+
+      const older = data.slice().reverse()
+      const prevScrollHeight = scrollRef.current?.scrollHeight ?? 0
+
+      setMessages(prev => [...older, ...prev])
+      setHasMore(data.length === 50)
+
+      // Restore scroll position so viewport doesn't jump
+      requestAnimationFrame(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight - prevScrollHeight
+        }
+      })
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
+  async function handleInitiateTrade() {
+    setTradeLoading(true)
+    try {
+      const data = await initiateTrade(chatId, otherUser.id)
+      if (data) setTrade(data as Trade)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao solicitar troca.')
+    } finally {
+      setTradeLoading(false)
+    }
+  }
+
+  async function handleConfirmTrade() {
+    if (!trade) return
+    setTradeLoading(true)
+    try {
+      await confirmTrade(trade.id, chatId)
+      setTrade(t => t ? { ...t, status: 'completed' } : t)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao confirmar troca.')
+    } finally {
+      setTradeLoading(false)
+    }
+  }
+
+  async function handleCancelTrade() {
+    if (!trade) return
+    setTradeLoading(true)
+    try {
+      await cancelTrade(trade.id, chatId)
+      setTrade(null)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao cancelar troca.')
+    } finally {
+      setTradeLoading(false)
+    }
+  }
 
   async function handleSend() {
     const content = text.trim()
@@ -117,7 +208,7 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
       const { data, error } = await supabase
         .from('messages')
         .insert({ chat_id: chatId, sender_id: currentUserId, content })
-        .select('id, sender_id, content, read, created_at')
+        .select('id, sender_id, content, read, created_at, message_type, metadata')
         .single()
 
       if (error) throw error
@@ -136,13 +227,17 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
 
   async function handleSendSpot(spot: TradeSpot) {
     setShowSpots(false)
-    const content = JSON.stringify({ _spot: true, id: spot.id, name: spot.name, type: spot.type, address: spot.address, city_name: spot.city_name, state_code: spot.state_code, lat: spot.lat, lng: spot.lng })
+    const metadata = { id: spot.id, name: spot.name, type: spot.type, address: spot.address, city_name: spot.city_name, state_code: spot.state_code, lat: spot.lat, lng: spot.lng }
     const optimisticId = `opt-${Date.now()}`
-    const optimistic: Message = { id: optimisticId, sender_id: currentUserId, content, read: false, created_at: new Date().toISOString() }
+    const optimistic: Message = { id: optimisticId, sender_id: currentUserId, content: spot.name, message_type: 'spot', metadata, read: false, created_at: new Date().toISOString() }
     setMessages(prev => [...prev, optimistic])
     setSending(true)
     try {
-      const { data, error } = await supabase.from('messages').insert({ chat_id: chatId, sender_id: currentUserId, content }).select('id, sender_id, content, read, created_at').single()
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({ chat_id: chatId, sender_id: currentUserId, content: spot.name, message_type: 'spot', metadata })
+        .select('id, sender_id, content, read, created_at, message_type, metadata')
+        .single()
       if (error) throw error
       setMessages(prev => prev.map(m => m.id === optimisticId ? data : m))
     } catch {
@@ -152,9 +247,11 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
     }
   }
 
-  function parseSpot(content: string): TradeSpot | null {
+  function parseSpot(msg: Message): TradeSpot | null {
+    if (msg.message_type === 'spot' && msg.metadata) return msg.metadata as unknown as TradeSpot
+    // Fallback: parse legacy JSON-encoded spots
     try {
-      const obj = JSON.parse(content)
+      const obj = JSON.parse(msg.content)
       return obj._spot ? obj : null
     } catch { return null }
   }
@@ -222,7 +319,18 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-4 space-y-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 lg:px-6 py-4 space-y-4">
+        {hasMore && (
+          <div className="flex justify-center pt-2 pb-4">
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="text-xs font-semibold text-ink-400 hover:text-green-600 disabled:opacity-50 transition-colors"
+            >
+              {loadingMore ? 'Carregando…' : '↑ Carregar mensagens anteriores'}
+            </button>
+          </div>
+        )}
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
             <div className="w-14 h-14 rounded-2xl bg-cream-200 flex items-center justify-center text-2xl">👋</div>
@@ -248,7 +356,26 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
                 const prev  = group.messages[i - 1]
                 const showTail = !prev || prev.sender_id !== msg.sender_id
 
-                const spot = parseSpot(msg.content)
+                const isTradeMsg = msg.message_type === 'trade_initiated' || msg.message_type === 'trade_completed' || msg.message_type === 'trade_cancelled'
+                const spot = isTradeMsg ? null : parseSpot(msg)
+
+                if (isTradeMsg) {
+                  const icons: Record<string, string> = { trade_initiated: '🤝', trade_completed: '✅', trade_cancelled: '❌' }
+                  const labels: Record<string, string> = {
+                    trade_initiated: `@${isMe ? 'Você' : otherUser.username} quer confirmar a troca`,
+                    trade_completed: `@${isMe ? 'Você' : otherUser.username} confirmou a troca!`,
+                    trade_cancelled: `@${isMe ? 'Você' : otherUser.username} cancelou a solicitação`,
+                  }
+                  return (
+                    <div key={msg.id} className="flex justify-center my-2">
+                      <div className="flex items-center gap-2 px-4 py-2 bg-cream-200 rounded-full text-xs text-ink-500 font-medium">
+                        <span>{icons[msg.message_type!]}</span>
+                        <span>{labels[msg.message_type!]}</span>
+                        <span className="text-ink-300">· {formatTime(msg.created_at)}</span>
+                      </div>
+                    </div>
+                  )
+                }
 
                 return (
                   <div key={msg.id} className={cn('flex', isMe ? 'justify-end' : 'justify-start')}>
@@ -312,6 +439,47 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
         <div ref={bottomRef} />
       </div>
 
+      {/* Trade banner */}
+      {trade?.status === 'pending' && trade.partner_id === currentUserId && (
+        <div className="bg-gold-50 border-t border-gold-200 px-4 py-3 shrink-0 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-sm text-ink-700 font-medium min-w-0">
+            <span className="text-xl shrink-0">🤝</span>
+            <span className="truncate">@{otherUser.username} quer confirmar a troca</span>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={handleCancelTrade}
+              disabled={tradeLoading}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-[#E7DDC4] text-ink-600 hover:bg-cream-100 transition-colors disabled:opacity-50"
+            >
+              Recusar
+            </button>
+            <button
+              onClick={handleConfirmTrade}
+              disabled={tradeLoading}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-500 text-white hover:bg-green-600 transition-colors disabled:opacity-50"
+            >
+              {tradeLoading ? '…' : 'Confirmar'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {trade?.status === 'completed' && (
+        <div className="bg-green-50 border-t border-green-200 px-4 py-3 shrink-0 flex items-center gap-3">
+          <span className="text-xl shrink-0">✅</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-green-800">Troca confirmada!</p>
+            <p className="text-xs text-green-600">
+              Avalie sua experiência com{' '}
+              <Link href={`/profile/${otherUser.username}`} className="underline font-medium">
+                @{otherUser.username}
+              </Link>
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Spot picker */}
       {showSpots && (
         <div className="bg-white border-t border-[#E7DDC4] shrink-0 max-h-64 overflow-y-auto">
@@ -361,6 +529,25 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
             <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
           </svg>
         </button>
+
+        {trade?.status !== 'completed' && (
+          <button
+            onClick={handleInitiateTrade}
+            disabled={tradeLoading || (trade?.status === 'pending' && trade.initiator_id === currentUserId)}
+            title={trade?.status === 'pending' && trade.initiator_id === currentUserId ? 'Aguardando confirmação…' : 'Solicitar confirmação de troca'}
+            className={cn(
+              'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-150',
+              trade?.status === 'pending' && trade.initiator_id === currentUserId
+                ? 'bg-gold-100 text-gold-400 cursor-default'
+                : 'text-ink-300 hover:text-ink-600 hover:bg-cream-100 disabled:opacity-40',
+            )}
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 3l4 4-4 4"/><path d="M20 7H4"/>
+              <path d="M8 21l-4-4 4-4"/><path d="M4 17h16"/>
+            </svg>
+          </button>
+        )}
 
         <input
           ref={inputRef}

@@ -88,7 +88,7 @@ export default async function ChatListPage() {
           <div className="w-16 h-16 rounded-2xl bg-cream-200 flex items-center justify-center text-3xl">💬</div>
           <p className="font-display font-bold text-xl text-ink-800">Nenhuma conversa ainda</p>
           <p className="text-sm text-ink-400 max-w-[280px]">
-            Encontra os teus matches e começa a negociar figurinhas.
+            Encontre seus matches e comece a negociar figurinhas.
           </p>
           <Link
             href="/matches"
@@ -130,7 +130,7 @@ export default async function ChatListPage() {
                     'text-[15px] truncate',
                     chat.unread > 0 ? 'font-bold text-ink-800' : 'font-semibold text-ink-700'
                   )}>
-                    {chat.other?.username ?? 'Utilizador'}
+                    {chat.other?.username ?? 'Usuário'}
                   </span>
                   <span className="text-xs text-ink-300 shrink-0">
                     {chat.lastMsg ? timeAgo(chat.lastMsg.created_at) : ''}

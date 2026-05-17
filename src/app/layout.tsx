@@ -29,6 +29,13 @@ export const metadata: Metadata = {
     images: ['/og-image.png'],
   },
   alternates: { canonical: SITE_URL },
+  icons: {
+    icon: [
+      { url: '/logo/trocai-mark.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico' },
+    ],
+    apple: '/logo/trocai-mark.svg',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

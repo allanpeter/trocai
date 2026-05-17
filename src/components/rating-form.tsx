@@ -83,7 +83,7 @@ export function RatingForm({ ratedId, ratedUsername }: Props) {
           Comentário <span className="font-normal text-ink-300 normal-case">(opcional)</span>
         </label>
         <textarea
-          placeholder={`Como correu a troca com @${ratedUsername}?`}
+          placeholder={`Como foi a troca com @${ratedUsername}?`}
           value={comment}
           onChange={e => setComment(e.target.value)}
           rows={3}
@@ -109,7 +109,7 @@ export function RatingForm({ ratedId, ratedUsername }: Props) {
           'disabled:opacity-40 disabled:cursor-not-allowed',
         )}
       >
-        {loading ? 'A enviar…' : 'Enviar avaliação'}
+        {loading ? 'Enviando…' : 'Enviar avaliação'}
       </button>
     </div>
   )
@@ -117,7 +117,7 @@ export function RatingForm({ ratedId, ratedUsername }: Props) {
 
 const LABELS: Record<number, string> = {
   1: 'Péssimo',
-  2: 'Mau',
+  2: 'Ruim',
   3: 'Ok',
   4: 'Bom',
   5: 'Excelente!',

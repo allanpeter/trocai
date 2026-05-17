@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -19,9 +20,10 @@ interface SidebarProps {
   username?: string | null
   avatarUrl?: string | null
   initial?: string
+  notifBell?: React.ReactNode
 }
 
-export function Sidebar({ username, avatarUrl, initial = '?' }: SidebarProps) {
+export function Sidebar({ username, avatarUrl, initial = '?', notifBell }: SidebarProps) {
   const pathname = usePathname()
   const router   = useRouter()
   const supabase = createClient()
@@ -82,6 +84,7 @@ export function Sidebar({ username, avatarUrl, initial = '?' }: SidebarProps) {
         <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold truncate">{username ?? 'Conta'}</div>
         </div>
+        {notifBell && <div className="shrink-0">{notifBell}</div>}
         <button
           onClick={handleLogout}
           className="p-1.5 rounded-lg text-ink-300 hover:text-cream-50 hover:bg-white/10 transition-colors shrink-0"

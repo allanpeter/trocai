@@ -1,9 +1,12 @@
+import Image from 'next/image'
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import type { MatchResultV2 } from '@/lib/types'
 
 interface MatchCardProps {
   match: MatchResultV2
   isPending?: boolean
+  existingChatId?: string
   onInitiateChat?: () => void
 }
 
@@ -25,7 +28,7 @@ function formatDistance(km: number | null): string | null {
   return `${Math.round(km)} km`
 }
 
-export function MatchCard({ match, isPending = false, onInitiateChat }: MatchCardProps) {
+export function MatchCard({ match, isPending = false, existingChatId, onInitiateChat }: MatchCardProps) {
   const stars = Math.round(match.rating)
   const dist  = formatDistance(match.distance_km)
 
@@ -37,7 +40,17 @@ export function MatchCard({ match, isPending = false, onInitiateChat }: MatchCar
         'hover:border-green-300 hover:shadow-[var(--sh-2)] hover:-translate-y-px'
       )}
     >
-      <AvatarCircle name={match.username} />
+      {match.avatar_url ? (
+        <Image
+          src={match.avatar_url}
+          width={44} height={44}
+          alt=""
+          unoptimized
+          className="w-11 h-11 rounded-full object-cover shrink-0"
+        />
+      ) : (
+        <AvatarCircle name={match.username} />
+      )}
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
@@ -74,13 +87,22 @@ export function MatchCard({ match, isPending = false, onInitiateChat }: MatchCar
         <span className="text-green-700">+{match.you_have_they_need}</span>
       </div>
 
-      <button
-        onClick={onInitiateChat}
-        disabled={isPending}
-        className="shrink-0 bg-green-500 text-white font-semibold text-[13px] px-3.5 py-2 rounded-[10px] hover:bg-green-600 active:bg-green-700 transition-colors duration-120 disabled:opacity-60 disabled:cursor-not-allowed"
-      >
-        {isPending ? '…' : 'Conversar'}
-      </button>
+      {existingChatId ? (
+        <Link
+          href={`/chat/${existingChatId}`}
+          className="shrink-0 border border-green-500 text-green-600 font-semibold text-[13px] px-3.5 py-2 rounded-[10px] hover:bg-green-50 transition-colors duration-120"
+        >
+          Ver conversa
+        </Link>
+      ) : (
+        <button
+          onClick={onInitiateChat}
+          disabled={isPending}
+          className="shrink-0 bg-green-500 text-white font-semibold text-[13px] px-3.5 py-2 rounded-[10px] hover:bg-green-600 active:bg-green-700 transition-colors duration-120 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {isPending ? '…' : 'Conversar'}
+        </button>
+      )}
     </div>
   )
 }
