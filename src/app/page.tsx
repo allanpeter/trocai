@@ -79,30 +79,30 @@ export default function LandingPage() {
         </div>
 
         {/* Sticker collage — fan spread with real Panini cards */}
-        <div className="relative h-[520px] hidden md:block select-none">
+        <div className="relative h-[560px] hidden md:block select-none">
           {/* Ronaldo — back-left */}
           <StickerCard
             src="/stickers/ronaldo.jpg"
             alt="Cristiano Ronaldo"
-            style={{ width: 148, top: 65, left: 0, transform: 'rotate(-16deg)', zIndex: 10 }}
+            style={{ width: 182, top: 55, left: 0, transform: 'rotate(-12deg)', zIndex: 10 }}
           />
           {/* Mbappé */}
           <StickerCard
             src="/stickers/mbappe.jpg"
             alt="Kylian Mbappé"
-            style={{ width: 153, top: 18, left: 88, transform: 'rotate(-5deg)', zIndex: 20 }}
+            style={{ width: 185, top: 10, left: 105, transform: 'rotate(-3deg)', zIndex: 20 }}
           />
           {/* Messi */}
           <StickerCard
             src="/stickers/messi.jpg"
             alt="Lionel Messi"
-            style={{ width: 153, top: 42, left: 192, transform: 'rotate(5deg)', zIndex: 30 }}
+            style={{ width: 185, top: 40, left: 215, transform: 'rotate(4deg)', zIndex: 30 }}
           />
           {/* Vini Jr — front, rare/gold glow */}
           <StickerCard
             src="/stickers/vinicius-jr.jpg"
             alt="Vinícius Júnior"
-            style={{ width: 158, top: 68, right: 0, transform: 'rotate(14deg)', zIndex: 40 }}
+            style={{ width: 190, top: 65, right: 0, transform: 'rotate(11deg)', zIndex: 40 }}
             rare
           />
         </div>
