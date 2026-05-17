@@ -82,7 +82,7 @@ export default async function UserProfilePage({ params }: Props) {
     .order('created_at', { ascending: false })
     .limit(10)
 
-  const ratings = (rawRatings ?? []) as Array<typeof rawRatings[number] & { profiles: { id: string; username: string; avatar_url: string | null } | null }>
+  const ratings = (rawRatings ?? []) as Array<NonNullable<typeof rawRatings>[number] & { profiles: { id: string; username: string; avatar_url: string | null } | null }>
 
   const alreadyRated = user
     ? !!(await supabase.from('ratings').select('id').eq('rater_id', user.id).eq('rated_id', profile.id).is('trade_id', null).maybeSingle()).data
