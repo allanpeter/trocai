@@ -74,7 +74,7 @@ export default function LandingPage() {
             >
               Bora trocar
             </Link>
-            <span className="text-sm text-ink-400"><span className="font-bold text-green-600">Grátis</span> · sem cadastro pra ver</span>
+            <span className="text-sm text-ink-400"><span className="font-bold text-green-600">Grátis</span></span>
           </div>
         </div>
 
@@ -98,12 +98,10 @@ export default function LandingPage() {
             alt="Lionel Messi"
             style={{ width: 185, top: 40, left: 215, transform: 'rotate(4deg)', zIndex: 30 }}
           />
-          {/* Vini Jr — front, rare/gold glow */}
           <StickerCard
             src="/stickers/vinicius-jr.jpg"
             alt="Vinícius Júnior"
             style={{ width: 190, top: 65, right: 0, transform: 'rotate(11deg)', zIndex: 40 }}
-            rare
           />
         </div>
       </section>
