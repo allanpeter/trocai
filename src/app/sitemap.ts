@@ -4,9 +4,7 @@ const BASE = 'https://www.trocai.app'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
-    { url: BASE,           lastModified: new Date(), changeFrequency: 'weekly',  priority: 1.0 },
-    { url: `${BASE}/signup`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${BASE}/login`,  lastModified: new Date(), changeFrequency: 'monthly', priority: 0.3 },
+    { url: BASE, lastModified: new Date(), changeFrequency: 'weekly', priority: 1.0 },
   ]
 
   try {
