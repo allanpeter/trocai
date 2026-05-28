@@ -1,7 +1,13 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
 import { TestimonialsCarousel } from '@/components/testimonials-carousel'
+
+function formatCount(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k`
+  return n > 0 ? String(n) : '0'
+}
 
 export const metadata: Metadata = {
   alternates: { canonical: 'https://www.trocai.app' },
@@ -43,7 +49,41 @@ const faqSchema = {
   ],
 }
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const supabase = await createClient()
+
+  const [
+    { count: usersCount },
+    { data: profileStats },
+    { data: ratingsData },
+  ] = await Promise.all([
+    supabase.from('profiles').select('id', { count: 'exact', head: true }),
+    supabase.from('profiles').select('trades_count').gt('trades_count', 0),
+    supabase
+      .from('ratings')
+      .select('score, comment, created_at, profiles!rater_id(username, city_name)')
+      .not('comment', 'is', null)
+      .gte('score', 4)
+      .order('created_at', { ascending: false })
+      .limit(3),
+  ])
+
+  const totalUsers  = usersCount ?? 0
+  const totalTrades = (profileStats ?? []).reduce((s, p) => s + (p.trades_count ?? 0), 0)
+
+  type RatingRow = {
+    score: number
+    comment: string
+    profiles: { username: string; city_name: string | null } | null
+  }
+  const testimonials = ((ratingsData ?? []) as RatingRow[])
+    .filter(r => r.comment && r.profiles?.username)
+    .map(r => ({
+      initial: r.profiles!.username[0].toUpperCase(),
+      quote:   r.comment,
+      author:  `@${r.profiles!.username}${r.profiles!.city_name ? ` · ${r.profiles!.city_name}` : ''}`,
+    }))
+
   return (
     <div className="min-h-screen bg-cream-100 text-ink-800 font-body">
       <script
@@ -166,27 +206,30 @@ export default function LandingPage() {
       </section>
 
       {/* ── Stats banner ──────────────────────────────────────────────── */}
-      <section id="numeros" className="max-w-[1180px] mx-auto px-8 py-12">
-        <div className="bg-ink-800 rounded-3xl px-12 py-12 grid md:grid-cols-3 gap-8 text-center">
-          {[
-            { val: '2.3k', lbl: 'colecionadores ativos' },
-            { val: '8.7k', lbl: 'trocas combinadas' },
-            { val: '94%',  lbl: 'encontros confirmados' },
-          ].map(s => (
-            <div key={s.lbl}>
-              <div className="font-display font-extrabold text-[64px] leading-none text-gold-400 tracking-tight">
-                {s.val}
+      {(totalUsers > 0 || totalTrades > 0) && (
+        <section id="numeros" className="max-w-[1180px] mx-auto px-8 py-12">
+          <div className="bg-ink-800 rounded-3xl px-12 py-12 grid md:grid-cols-2 gap-8 text-center">
+            {[
+              { val: formatCount(totalUsers),  lbl: 'colecionadores cadastrados' },
+              { val: formatCount(totalTrades), lbl: 'trocas realizadas' },
+            ].map(s => (
+              <div key={s.lbl}>
+                <div className="font-display font-extrabold text-[64px] leading-none text-gold-400 tracking-tight">
+                  {s.val}
+                </div>
+                <div className="text-sm text-ink-200 mt-2">{s.lbl}</div>
               </div>
-              <div className="text-sm text-ink-200 mt-2">{s.lbl}</div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
 
-      {/* ── Testimonials ──────────────────────────────────────────────── */}
-      <section className="max-w-[1180px] mx-auto px-8 py-12">
-        <TestimonialsCarousel />
-      </section>
+      {/* ── Testimonials — só exibe com dados reais ───────────────────── */}
+      {testimonials.length >= 2 && (
+        <section className="max-w-[1180px] mx-auto px-8 py-12">
+          <TestimonialsCarousel testimonials={testimonials} />
+        </section>
+      )}
 
       {/* ── FAQ ───────────────────────────────────────────────────────── */}
       <section id="faq" className="max-w-[1180px] mx-auto px-8 py-20">
@@ -223,7 +266,7 @@ export default function LandingPage() {
 
       {/* ── Footer ────────────────────────────────────────────────────── */}
       <footer className="bg-ink-900 text-cream-200 px-8 pt-16 pb-8 mt-20">
-        <div className="max-w-[1180px] mx-auto grid md:grid-cols-[1.4fr_1fr_1fr_1fr] gap-12 mb-12">
+        <div className="max-w-[1180px] mx-auto grid md:grid-cols-[1.4fr_1fr_1fr] gap-12 mb-12">
           <div>
             <Image src="/logo/trocai-logo-dark.svg" width={160} height={48} alt="trocai" className="mb-4" />
             <p className="text-sm text-ink-200 max-w-[280px] leading-relaxed">
@@ -231,8 +274,7 @@ export default function LandingPage() {
             </p>
           </div>
           {[
-            { title: 'Produto', links: ['Como funciona', 'Álbuns', 'App mobile', 'Status'], hrefs: ['#como', '#', '#', '#'] },
-            { title: 'Comunidade', links: ['Blog', 'Histórias', 'Embaixadores'], hrefs: ['#', '#', '#'] },
+            { title: 'Produto', links: ['Como funciona', 'Guia de trocas', 'FAQ'], hrefs: ['#como', '/guia', '/faq'] },
             { title: 'Legal', links: ['Termos', 'Privacidade', 'Cookies', 'Contato'], hrefs: ['/termos', '/privacidade', '/cookies', '/contato'] },
           ].map(col => (
             <div key={col.title}>

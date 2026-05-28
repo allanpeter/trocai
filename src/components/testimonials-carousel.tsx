@@ -3,36 +3,20 @@
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
-const TESTIMONIALS = [
-  {
-    initial: 'J',
-    quote: 'Fechei o álbum em 3 semanas!! A figurinha do Vini Jr eu achei com uma pessoa do bairro mesmo, o app avisou. Meu filho nao acreditou kkk',
-    author: 'Juliana · São Paulo · completou Copa 2026',
-  },
-  {
-    initial: 'C',
-    quote: 'Tinha mais de 80 repetidas guardada ha meses. Em uma semana troquei quase todas. Nem acreditei quantas pessoas do bairro tambem coleciona.',
-    author: 'Carlos · Belo Horizonte · 214 trocas realizadas',
-  },
-  {
-    initial: 'M',
-    quote: 'Tentei grupo de zap pra trocar mas so bagunça. Aqui o sistema ja indica quem tem o que eu preciso. Muito mais facil, recomendo pra todo mundo!',
-    author: 'Marina · Curitiba · completou Brasileirão 2026',
-  },
-]
+type Testimonial = { initial: string; quote: string; author: string }
 
-export function TestimonialsCarousel() {
+export function TestimonialsCarousel({ testimonials }: { testimonials: Testimonial[] }) {
   const [current, setCurrent] = useState(0)
 
   function prev() {
-    setCurrent(i => (i === 0 ? TESTIMONIALS.length - 1 : i - 1))
+    setCurrent(i => (i === 0 ? testimonials.length - 1 : i - 1))
   }
 
   function next() {
-    setCurrent(i => (i === TESTIMONIALS.length - 1 ? 0 : i + 1))
+    setCurrent(i => (i === testimonials.length - 1 ? 0 : i + 1))
   }
 
-  const t = TESTIMONIALS[current]
+  const t = testimonials[current]
 
   return (
     <div className="bg-green-500 text-white rounded-3xl p-10 md:p-14">
@@ -52,7 +36,7 @@ export function TestimonialsCarousel() {
       <div className="flex items-center justify-between">
         {/* Dots */}
         <div className="flex gap-2">
-          {TESTIMONIALS.map((_, i) => (
+          {testimonials.map((_, i) => (
             <button
               key={i}
               onClick={() => setCurrent(i)}
