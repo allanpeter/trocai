@@ -74,15 +74,18 @@ export default async function LandingPage() {
   type RatingRow = {
     score: number
     comment: string
-    profiles: { username: string; city_name: string | null } | null
+    profiles: { username: string; city_name: string | null }[] | null
   }
-  const testimonials = ((ratingsData ?? []) as RatingRow[])
-    .filter(r => r.comment && r.profiles?.username)
-    .map(r => ({
-      initial: r.profiles!.username[0].toUpperCase(),
-      quote:   r.comment,
-      author:  `@${r.profiles!.username}${r.profiles!.city_name ? ` · ${r.profiles!.city_name}` : ''}`,
-    }))
+  const testimonials = ((ratingsData ?? []) as unknown as RatingRow[])
+    .filter(r => r.comment && r.profiles?.[0]?.username)
+    .map(r => {
+      const p = r.profiles![0]
+      return {
+        initial: p.username[0].toUpperCase(),
+        quote:   r.comment,
+        author:  `@${p.username}${p.city_name ? ` · ${p.city_name}` : ''}`,
+      }
+    })
 
   return (
     <div className="min-h-screen bg-cream-100 text-ink-800 font-body">
