@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { cn } from '@/lib/utils'
+import { cn, safeStateCode } from '@/lib/utils'
 import type { City } from '@/lib/types'
 
 export interface CitySelection {
@@ -72,7 +72,8 @@ export function CityAutocomplete({ defaultValue = '', placeholder = 'Ex: São Pa
   }, [])
 
   function handleSelect(city: City) {
-    setQuery(`${city.name}, ${city.state_code}`)
+    const sc = safeStateCode(city.state_code)
+    setQuery(sc ? `${city.name}, ${sc}` : city.name)
     setSelected(true)
     setOpen(false)
     setResults([])
@@ -176,7 +177,9 @@ export function CityAutocomplete({ defaultValue = '', placeholder = 'Ex: São Pa
                   <circle cx="12" cy="10" r="3"/>
                 </svg>
                 <span className="flex-1 text-sm text-ink-800 font-medium">{city.name}</span>
-                <span className="shrink-0 text-xs text-ink-400 font-mono">{city.state_code}</span>
+                {safeStateCode(city.state_code) && (
+                  <span className="shrink-0 text-xs text-ink-400 font-mono">{city.state_code}</span>
+                )}
               </button>
             </li>
           ))}

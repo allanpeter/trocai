@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { startChat } from '../../matches/actions'
 import { RatingForm } from '@/components/rating-form'
 import { AdBanner } from '@/components/ad-banner'
-import { cn } from '@/lib/utils'
+import { cn, safeStateCode } from '@/lib/utils'
 
 interface Props {
   params: Promise<{ username: string }>
@@ -101,7 +101,7 @@ export default async function UserProfilePage({ params }: Props) {
     name: profile.full_name || `@${profile.username}`,
     url: `https://www.trocai.app/profile/${profile.username}`,
     ...(profile.city_name ?? profile.city
-      ? { homeLocation: { '@type': 'Place', name: `${profile.city_name ?? profile.city}${profile.state_code ?? profile.state ? `, ${profile.state_code ?? profile.state}` : ''}` } }
+      ? { homeLocation: { '@type': 'Place', name: `${profile.city_name ?? profile.city}${safeStateCode(profile.state_code ?? profile.state) ? `, ${safeStateCode(profile.state_code ?? profile.state)}` : ''}` } }
       : {}),
     ...(profile.bio ? { description: profile.bio } : {}),
   }
@@ -139,7 +139,7 @@ export default async function UserProfilePage({ params }: Props) {
                     <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
                   </svg>
                   {profile.city_name ?? profile.city}
-                  {(profile.state_code ?? profile.state) ? `, ${profile.state_code ?? profile.state}` : ''}
+                  {safeStateCode(profile.state_code ?? profile.state) ? `, ${safeStateCode(profile.state_code ?? profile.state)}` : ''}
                 </span>
               )}
               <span>Membro desde {memberSince}</span>

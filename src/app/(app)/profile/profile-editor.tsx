@@ -4,7 +4,7 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
+import { cn, safeStateCode } from '@/lib/utils'
 import { CityAutocomplete } from '@/components/city-autocomplete'
 import type { CitySelection } from '@/components/city-autocomplete'
 import type { Profile } from '@/lib/types'
@@ -128,7 +128,7 @@ export function ProfileEditor({ profile }: { profile: EditableProfile }) {
   )
 
   const currentCity = profile.city_name ?? profile.city
-  const currentState = profile.state_code ?? profile.state
+  const currentState = safeStateCode(profile.state_code ?? profile.state)
 
   return (
     <div className="flex flex-col gap-6 max-w-[600px]">

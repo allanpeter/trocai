@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og'
+import { safeStateCode } from '@/lib/utils'
 
 export const runtime = 'edge'
 export const size = { width: 1200, height: 630 }
@@ -67,7 +68,7 @@ export default async function ProfileOgImage({ params }: Props) {
   const displayName  = profile?.full_name || `@${username}`
   const handle       = `@${profile?.username ?? username}`
   const city         = profile?.city_name ?? profile?.city ?? null
-  const state        = profile?.state_code ?? profile?.state ?? null
+  const state        = safeStateCode(profile?.state_code ?? profile?.state) ?? null
   const location     = city ? `${city}${state ? `, ${state}` : ''}` : null
   const trades       = profile?.trades_count ?? 0
   const rating       = Math.round(profile?.rating ?? 0)

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { MatchesList } from './matches-list'
+import { safeStateCode } from '@/lib/utils'
 
 const COPA_ALBUM_ID = '00000000-0000-0000-0000-000000000001'
 const VALID_RADII = [10, 30, 100] as const
@@ -45,7 +46,7 @@ export default async function MatchesPage({ searchParams }: Props) {
   )
 
   const userCity = profile?.city_name ?? profile?.city ?? null
-  const userState = profile?.state_code ?? null
+  const userState = safeStateCode(profile?.state_code) ?? null
 
   return (
     <MatchesList
