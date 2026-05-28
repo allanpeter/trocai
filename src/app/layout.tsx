@@ -40,15 +40,12 @@ export const metadata: Metadata = {
     siteName: 'trocai',
     title: 'trocai — Bora trocar figurinhas?',
     description: 'Encontra quem mora perto e tem as figurinhas que você precisa. Copa do Mundo 2026.',
-    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'trocai' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'trocai — Bora trocar figurinhas?',
     description: 'Encontra quem mora perto e tem as figurinhas que você precisa.',
-    images: ['/og-image.png'],
   },
-  alternates: { canonical: SITE_URL },
   icons: {
     icon: [
       { url: '/logo/trocai-mark.svg', type: 'image/svg+xml' },
@@ -58,11 +55,27 @@ export const metadata: Metadata = {
   },
 }
 
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'trocai',
+  url: 'https://www.trocai.app',
+  description: 'Plataforma gratuita de troca de figurinhas da Copa do Mundo 2026. Encontre colecionadores próximos e complete seu álbum.',
+  applicationCategory: 'SocialApplication',
+  operatingSystem: 'Web',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'BRL' },
+  inLanguage: 'pt-BR',
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const adsenseId = process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID
   return (
     <html lang="pt-BR" className={`${bricolage.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}>
       <body className="antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        />
         {children}
         <Toaster richColors position="top-right" />
         {adsenseId && (

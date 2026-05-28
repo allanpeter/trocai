@@ -5,6 +5,7 @@ import Link from 'next/link'
 export const metadata: Metadata = {
   title: 'Política de Privacidade',
   description: 'Como o trocai coleta, usa e protege seus dados pessoais.',
+  alternates: { canonical: 'https://www.trocai.app/privacidade' },
 }
 
 const UPDATED = '13 de maio de 2026'

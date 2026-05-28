@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/api/', '/auth/', '/onboarding'],
+      disallow: ['/api/', '/auth/', '/onboarding', '/login', '/signup'],
     },
     sitemap: 'https://www.trocai.app/sitemap.xml',
   }

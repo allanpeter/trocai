@@ -5,6 +5,7 @@ import Link from 'next/link'
 export const metadata: Metadata = {
   title: 'Perguntas frequentes — trocai',
   description: 'Tire suas dúvidas sobre o trocai: como funciona, como trocar figurinhas, reportar bugs e enviar sugestões.',
+  alternates: { canonical: 'https://www.trocai.app/faq' },
 }
 
 const FAQS = [
@@ -46,8 +47,22 @@ const FAQS = [
 ]
 
 export default function FaqPage() {
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQS.map(({ q, a }) => ({
+      '@type': 'Question',
+      name: q,
+      acceptedAnswer: { '@type': 'Answer', text: a },
+    })),
+  }
+
   return (
     <div className="min-h-screen bg-cream-100 text-ink-800 font-body">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
       <header className="sticky top-0 z-20 bg-cream-100/85 backdrop-blur-md border-b border-[#E7DDC4]">
         <div className="max-w-[1180px] mx-auto px-8 h-[60px] flex items-center gap-8">
           <Link href="/" className="shrink-0">

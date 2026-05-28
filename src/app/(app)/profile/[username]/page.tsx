@@ -35,8 +35,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
+    alternates: { canonical: `https://www.trocai.app/profile/${p.username}` },
     openGraph: { title, description, type: 'profile' },
-    twitter: { card: 'summary', title, description },
+    twitter: { card: 'summary_large_image', title, description },
   }
 }
 
@@ -60,10 +61,21 @@ export default async function UserProfilePage({ params }: Props) {
     redirect('/profile')
   }
 
-  const { data: userStickers } = await supabase
-    .from('user_stickers')
-    .select('status, quantity')
-    .eq('user_id', profile.id)
+  const [{ data: userStickers }, { data: rawRatings }, alreadyRatedResult] = await Promise.all([
+    supabase
+      .from('user_stickers')
+      .select('status, quantity')
+      .eq('user_id', profile.id),
+    supabase
+      .from('ratings')
+      .select('id, score, comment, created_at, rater_id, profiles!rater_id(id, username, avatar_url)')
+      .eq('rated_id', profile.id)
+      .order('created_at', { ascending: false })
+      .limit(10),
+    user
+      ? supabase.from('ratings').select('id').eq('rater_id', user.id).eq('rated_id', profile.id).is('trade_id', null).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ])
 
   const stats = (userStickers ?? []).reduce(
     (acc, us) => {
@@ -75,25 +87,31 @@ export default async function UserProfilePage({ params }: Props) {
     { have: 0, dupe: 0, need: 0 }
   )
 
-  const { data: rawRatings } = await supabase
-    .from('ratings')
-    .select('id, score, comment, created_at, rater_id, profiles!rater_id(id, username, avatar_url)')
-    .eq('rated_id', profile.id)
-    .order('created_at', { ascending: false })
-    .limit(10)
-
   const ratings = (rawRatings ?? []) as Array<NonNullable<typeof rawRatings>[number] & { profiles: { id: string; username: string; avatar_url: string | null } | null }>
 
-  const alreadyRated = user
-    ? !!(await supabase.from('ratings').select('id').eq('rater_id', user.id).eq('rated_id', profile.id).is('trade_id', null).maybeSingle()).data
-    : false
+  const alreadyRated = !!(alreadyRatedResult as { data: unknown }).data
 
   const stars = Math.round(profile.rating ?? 0)
   const memberSince = new Date(profile.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
   const formatDate = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
 
+  const personSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: profile.full_name || `@${profile.username}`,
+    url: `https://www.trocai.app/profile/${profile.username}`,
+    ...(profile.city_name ?? profile.city
+      ? { homeLocation: { '@type': 'Place', name: `${profile.city_name ?? profile.city}${profile.state_code ?? profile.state ? `, ${profile.state_code ?? profile.state}` : ''}` } }
+      : {}),
+    ...(profile.bio ? { description: profile.bio } : {}),
+  }
+
   return (
     <div className="flex flex-col gap-6 max-w-[600px]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(personSchema) }}
+      />
       <Link href="/search" className="flex items-center gap-1.5 text-sm text-ink-400 hover:text-ink-700 transition-colors w-fit -mb-2">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="m15 18-6-6 6-6"/>
@@ -160,8 +178,10 @@ export default async function UserProfilePage({ params }: Props) {
         </div>
       )}
 
-      {/* Ad between stats and CTA */}
-      <AdBanner slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_PROFILE ?? ''} format="rectangle" />
+      {/* Ad only when profile has meaningful content — avoids thin-content+ad penalty */}
+      {(profile.bio || stats.have + stats.dupe + stats.need > 0 || profile.trades_count > 0) && (
+        <AdBanner slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_PROFILE ?? ''} format="rectangle" />
+      )}
 
       {/* Chat CTA — only for logged in users */}
       {user ? (

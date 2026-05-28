@@ -5,6 +5,7 @@ import Link from 'next/link'
 export const metadata: Metadata = {
   title: 'Contato',
   description: 'Entre em contato com a equipe do trocai.',
+  alternates: { canonical: 'https://www.trocai.app/contato' },
 }
 
 const CONTACT = 'allanpeter565@gmail.com'

@@ -13,6 +13,12 @@ interface Props {
   className?: string
 }
 
+const MIN_HEIGHT: Record<NonNullable<Props['format']>, number> = {
+  auto:       90,
+  horizontal: 90,
+  rectangle:  250,
+}
+
 export function AdBanner({ slot, format = 'auto', className }: Props) {
   const publisherId = process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID
 
@@ -27,9 +33,12 @@ export function AdBanner({ slot, format = 'auto', className }: Props) {
 
   return (
     <div className={cn('overflow-hidden', className)}>
+      <p className="text-[10px] text-ink-300 font-medium tracking-wide uppercase mb-1 select-none">
+        Publicidade
+      </p>
       <ins
         className="adsbygoogle"
-        style={{ display: 'block' }}
+        style={{ display: 'block', minHeight: MIN_HEIGHT[format] }}
         data-ad-client={publisherId}
         data-ad-slot={slot}
         data-ad-format={format}

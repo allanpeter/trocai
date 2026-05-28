@@ -5,6 +5,7 @@ import Link from 'next/link'
 export const metadata: Metadata = {
   title: 'Política de Cookies',
   description: 'Como o trocai usa cookies e tecnologias similares.',
+  alternates: { canonical: 'https://www.trocai.app/cookies' },
 }
 
 const UPDATED = '17 de maio de 2026'

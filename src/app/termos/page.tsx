@@ -5,6 +5,7 @@ import Link from 'next/link'
 export const metadata: Metadata = {
   title: 'Termos de Uso',
   description: 'Termos e condições de uso do trocai.',
+  alternates: { canonical: 'https://www.trocai.app/termos' },
 }
 
 const UPDATED = '17 de maio de 2026'

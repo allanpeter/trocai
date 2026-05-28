@@ -1,10 +1,15 @@
+import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { TestimonialsCarousel } from '@/components/testimonials-carousel'
 
+export const metadata: Metadata = {
+  alternates: { canonical: 'https://www.trocai.app' },
+}
+
 /* ── Real Panini sticker card for hero collage ──────────────────────── */
-function StickerCard({ src, alt, style, rare }: {
-  src: string; alt: string; style?: React.CSSProperties; rare?: boolean
+function StickerCard({ src, alt, style, rare, priority }: {
+  src: string; alt: string; style?: React.CSSProperties; rare?: boolean; priority?: boolean
 }) {
   return (
     <div
@@ -16,14 +21,35 @@ function StickerCard({ src, alt, style, rare }: {
         ...style,
       }}
     >
-      <Image src={src} alt={alt} width={160} height={224} className="w-full object-cover block" />
+      <Image src={src} alt={alt} width={160} height={224} className="w-full object-cover block" priority={priority} />
     </div>
   )
+}
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    { '@type': 'Question', name: 'É grátis mesmo?',
+      acceptedAnswer: { '@type': 'Answer', text: 'É. Pra usar o app inteiro, pra sempre. A gente sustenta com banner discreto e patrocínio dos álbuns. Sem assinatura escondida.' } },
+    { '@type': 'Question', name: 'Como sei que a pessoa do outro lado é de confiança?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Todo perfil tem histórico de trocas e avaliação. A gente também sugere o primeiro encontro em local público — escola, praça, café.' } },
+    { '@type': 'Question', name: 'Preciso pagar pra trocar?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Não. A troca é entre as duas pessoas — figurinha por figurinha. A gente só conecta.' } },
+    { '@type': 'Question', name: 'Funciona em outras coleções, ou só na Copa?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Começamos com a Copa 2026 porque é o mais procurado. Já tá rolando Brasileirão 2026 também. Outras coleções entram conforme demanda.' } },
+    { '@type': 'Question', name: 'E se eu mudar de cidade?',
+      acceptedAnswer: { '@type': 'Answer', text: 'Beleza. Você atualiza sua cidade e a busca de matches já considera quem tá perto. Sua coleção e seu histórico ficam.' } },
+  ],
 }
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-cream-100 text-ink-800 font-body">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
 
       {/* ── Nav ───────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-20 bg-cream-100/85 backdrop-blur-md border-b border-[#E7DDC4]">
@@ -91,12 +117,14 @@ export default function LandingPage() {
             src="/stickers/mbappe.jpg"
             alt="Kylian Mbappé"
             style={{ width: 185, top: 10, left: 105, transform: 'rotate(-3deg)', zIndex: 20 }}
+            priority
           />
           {/* Messi */}
           <StickerCard
             src="/stickers/messi.jpg"
             alt="Lionel Messi"
             style={{ width: 185, top: 40, left: 215, transform: 'rotate(4deg)', zIndex: 30 }}
+            priority
           />
           <StickerCard
             src="/stickers/vinicius-jr.jpg"
