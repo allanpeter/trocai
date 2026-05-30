@@ -23,6 +23,7 @@ interface OtherUser {
   username: string
   avatar_url: string | null
   city: string | null
+  city_name?: string | null
 }
 
 interface TradeSpot {
@@ -58,9 +59,21 @@ interface Props {
   hasMore: boolean
   activeTrade: Trade | null
   tradeSpots: TradeSpot[]
+  myLat: number | null
+  myLng: number | null
+  otherLat: number | null
+  otherLng: number | null
 }
 
-export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, hasMore: initialHasMore, activeTrade: initialTrade, tradeSpots }: Props) {
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, hasMore: initialHasMore, activeTrade: initialTrade, tradeSpots, myLat, myLng, otherLat, otherLng }: Props) {
   const supabase   = useRef(createClient()).current
   const mountId    = useRef(Math.random())
   const [messages, setMessages]     = useState<Message[]>(initialMessages)
@@ -75,10 +88,63 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
   const [loadingMore, setLoadingMore] = useState(false)
   const [trade, setTrade]             = useState<Trade | null>(initialTrade)
   const [tradeLoading, setTradeLoading] = useState(false)
+  const [liveSpots, setLiveSpots]     = useState<TradeSpot[]>([])
+  const [loadingSpots, setLoadingSpots] = useState(false)
   const [, startTransition]           = useTransition()
   const bottomRef  = useRef<HTMLDivElement>(null)
   const inputRef   = useRef<HTMLInputElement>(null)
   const scrollRef  = useRef<HTMLDivElement>(null)
+
+  // Effective spot list: prefer DB spots; fall back to live Overpass results
+  const effectiveSpots = tradeSpots.length > 0 ? tradeSpots : liveSpots
+
+  // When no DB spots are available, fetch from Overpass client-side (non-blocking)
+  useEffect(() => {
+    if (tradeSpots.length > 0 || myLat == null || myLng == null) return
+
+    const midLat = otherLat != null ? (myLat + otherLat) / 2 : myLat
+    const midLng = otherLng != null ? (myLng + otherLng) / 2 : myLng
+    const osmQuery = `[out:json][timeout:8];(node["amenity"~"cafe|library"]["name"](around:5000,${midLat},${midLng});node["leisure"="park"]["name"](around:5000,${midLat},${midLng});way["shop"="mall"]["name"](around:5000,${midLat},${midLng}););out center 6;`
+
+    setLoadingSpots(true)
+    fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      body: `data=${encodeURIComponent(osmQuery)}`,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'trocai/1.0' },
+      signal: AbortSignal.timeout(8000),
+    })
+      .then(res => res.ok ? res.json() : null)
+      .then(json => {
+        if (!json) return
+        const amenityToType: Record<string, string> = { cafe: 'cafeteria', library: 'biblioteca' }
+        type OsmEl = { id: number; lat?: number; lon?: number; center?: { lat: number; lon: number }; tags: Record<string, string> }
+        const spots: TradeSpot[] = ((json.elements ?? []) as OsmEl[])
+          .filter(el => el.tags?.name && (el.lat ?? el.center?.lat))
+          .slice(0, 6)
+          .map(el => {
+            const spotLat = el.lat ?? el.center!.lat
+            const spotLng = el.lon ?? el.center!.lon
+            const distanceKm = Math.round(haversineKm(midLat, midLng, spotLat, spotLng))
+            return {
+              id: `osm-${el.id}`,
+              name: el.tags.name,
+              type: amenityToType[el.tags.amenity] ?? (el.tags.leisure === 'park' ? 'parque' : 'shopping'),
+              address: null,
+              city_name: otherUser.city_name ?? otherUser.city ?? '',
+              state_code: '',
+              lat: spotLat,
+              lng: spotLng,
+              verified: false,
+              distanceKm,
+            }
+          })
+          .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999))
+        setLiveSpots(spots)
+      })
+      .catch(() => { /* silently — chat works without spots */ })
+      .finally(() => setLoadingSpots(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -521,10 +587,12 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
               </svg>
             </button>
           </div>
-          {tradeSpots.length === 0 ? (
+          {loadingSpots ? (
+            <p className="px-4 py-4 text-sm text-ink-400">Buscando locais próximos…</p>
+          ) : effectiveSpots.length === 0 ? (
             <p className="px-4 py-4 text-sm text-ink-400">Nenhum local cadastrado ainda.</p>
           ) : (
-            tradeSpots.map(spot => (
+            effectiveSpots.map(spot => (
               <button
                 key={spot.id}
                 onClick={() => handleSendSpot(spot)}
@@ -557,7 +625,7 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
       )}
 
       {/* Spot hint banner — show when spots exist and none sent yet */}
-      {tradeSpots.length > 0 &&
+      {effectiveSpots.length > 0 &&
         !showSpots &&
         !spotHintDismissed &&
         !messages.some(m => m.message_type === 'spot') && (

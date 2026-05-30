@@ -35,79 +35,33 @@ export default async function ChatThreadPage({ params }: Props) {
 
   const [{ data: myProfile }, { data: otherProfile }, { data: messages }, { data: activeTrade }] = await Promise.all([
     supabase.from('profiles').select('lat, lng, state_code').eq('id', user.id).single(),
-    supabase.from('profiles').select('id, username, avatar_url, city, lat, lng, state_code').eq('id', otherId).single(),
+    supabase.from('profiles').select('id, username, avatar_url, city, city_name, lat, lng, state_code').eq('id', otherId).single(),
     supabase.from('messages').select('id, sender_id, content, read, created_at, message_type, metadata').eq('chat_id', id).order('created_at', { ascending: false }).limit(50),
     supabase.from('trades').select('id, status, initiator_id, partner_id').eq('chat_id', id).not('status', 'eq', 'cancelled').maybeSingle(),
   ])
 
+  // Fetch spots from DB only — no blocking Overpass call in SSR.
+  // If empty, ChatThread fetches from Overpass client-side (non-blocking).
   const stateFilter = [myProfile?.state_code, otherProfile?.state_code].filter((s): s is string => !!s)
   const spotsQuery = supabase
     .from('trade_spots')
     .select('id, name, type, address, city_name, state_code, lat, lng, verified')
     .order('verified', { ascending: false })
-    .order('popularity',  { ascending: false })
+    .order('popularity', { ascending: false })
     .limit(30)
-  const { data: rawSpots } = stateFilter.length > 0
-    ? await spotsQuery.in('state_code', stateFilter)
-    : await spotsQuery
 
-  // Mark messages from the other user as read
-  await supabase
-    .from('messages')
-    .update({ read: true })
-    .eq('chat_id', id)
-    .eq('read', false)
-    .neq('sender_id', user.id)
+  const [{ data: rawSpots }] = await Promise.all([
+    stateFilter.length > 0 ? spotsQuery.in('state_code', stateFilter) : spotsQuery,
+    // Mark messages from the other user as read (fire-and-forget alongside spots query)
+    supabase.from('messages').update({ read: true }).eq('chat_id', id).eq('read', false).neq('sender_id', user.id),
+  ])
 
-  // OSM fallback: when no pre-seeded spots exist for this city pair, fetch live from Overpass
-  type RawSpot = { id: string; name: string; type: string; address: string | null; city_name: string; state_code: string; lat: number; lng: number; verified: boolean }
-  let spotsSource: RawSpot[] = (rawSpots ?? []) as RawSpot[]
+  const myLat = myProfile?.lat ?? null
+  const myLng = myProfile?.lng ?? null
+  const otherLat = otherProfile?.lat ?? null
+  const otherLng = otherProfile?.lng ?? null
 
-  if (spotsSource.length === 0) {
-    const myLat0 = myProfile?.lat
-    const myLng0 = myProfile?.lng
-    const otherLat0 = otherProfile?.lat
-    const otherLng0 = otherProfile?.lng
-    if (myLat0 != null && myLng0 != null) {
-      const midLat = otherLat0 != null ? (myLat0 + otherLat0) / 2 : myLat0
-      const midLng = otherLng0 != null ? (myLng0 + otherLng0) / 2 : myLng0
-      const osmQuery = `[out:json][timeout:8];(node["amenity"~"cafe|library"]["name"](around:5000,${midLat},${midLng});node["leisure"="park"]["name"](around:5000,${midLat},${midLng});way["shop"="mall"]["name"](around:5000,${midLat},${midLng}););out center 6;`
-      try {
-        const res = await fetch('https://overpass-api.de/api/interpreter', {
-          method: 'POST',
-          body: `data=${encodeURIComponent(osmQuery)}`,
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'trocai/1.0' },
-          signal: AbortSignal.timeout(8000),
-        })
-        if (res.ok) {
-          const json = await res.json()
-          const amenityToType: Record<string, string> = { cafe: 'cafeteria', library: 'biblioteca' }
-          spotsSource = ((json.elements ?? []) as Array<{ id: number; lat?: number; lon?: number; center?: { lat: number; lon: number }; tags: Record<string, string> }>)
-            .filter(el => el.tags?.name && (el.lat ?? el.center?.lat))
-            .slice(0, 6)
-            .map(el => ({
-              id: `osm-${el.id}`,
-              name: el.tags.name,
-              type: amenityToType[el.tags.amenity] ?? (el.tags.leisure === 'park' ? 'parque' : 'shopping'),
-              address: null,
-              city_name: otherProfile?.city ?? '',
-              state_code: otherProfile?.state_code ?? '',
-              lat: el.lat ?? el.center!.lat,
-              lng: el.lon ?? el.center!.lon,
-              verified: false,
-            }))
-        }
-      } catch { /* silent — chat still works without spots */ }
-    }
-  }
-
-  // Sort spots by distance from midpoint between the two users (fallback: popularity order)
-  const myLat = myProfile?.lat
-  const myLng = myProfile?.lng
-  const otherLat = otherProfile?.lat
-  const otherLng = otherProfile?.lng
-
-  const tradeSpots = spotsSource.map(spot => {
+  const tradeSpots = (rawSpots ?? []).map(spot => {
     let distanceKm: number | null = null
     if (myLat != null && myLng != null && otherLat != null && otherLng != null) {
       const midLat = (myLat + otherLat) / 2
@@ -126,15 +80,21 @@ export default async function ChatThreadPage({ params }: Props) {
 
   const orderedMessages = (messages ?? []).slice().reverse()
 
+  const otherUserData = otherProfile ?? { id: otherId, username: 'Usuário', avatar_url: null, city: null, city_name: null }
+
   return (
     <ChatThread
       chatId={id}
       currentUserId={user.id}
-      otherUser={otherProfile ?? { id: otherId, username: 'Usuário', avatar_url: null, city: null }}
+      otherUser={otherUserData}
       initialMessages={orderedMessages}
       hasMore={(messages ?? []).length === 50}
       activeTrade={activeTrade ?? null}
       tradeSpots={tradeSpots}
+      myLat={myLat}
+      myLng={myLng}
+      otherLat={otherLat}
+      otherLng={otherLng}
     />
   )
 }
