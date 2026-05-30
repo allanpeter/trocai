@@ -21,6 +21,13 @@ const RADIUS_OPTIONS = [
 
 type SortKey = 'score' | 'distance' | 'overlap'
 
+type NearbySpot = { id: string; name: string; type: string; city_name: string; distKm: number | null }
+
+const SPOT_EMOJI: Record<string, string> = {
+  shopping: '🛍️', parque: '🌳', praca: '🏛️', cafeteria: '☕',
+  universidade: '🎓', biblioteca: '📚', mercado: '🛒', outro: '📍',
+}
+
 interface Props {
   matches:      MatchResultV2[]
   userCity:     string | null
@@ -28,9 +35,10 @@ interface Props {
   hasError:     boolean
   activeRadius: number | null
   chatByUser:   Map<string, string>
+  nearbySpots?: NearbySpot[]
 }
 
-export function MatchesList({ matches, userCity, userState, hasError, activeRadius, chatByUser }: Props) {
+export function MatchesList({ matches, userCity, userState, hasError, activeRadius, chatByUser, nearbySpots = [] }: Props) {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [sortKey, setSortKey] = useState<SortKey>('score')
@@ -128,6 +136,26 @@ export function MatchesList({ matches, userCity, userState, hasError, activeRadi
           </div>
         )}
       </div>
+
+      {/* Nearby spots hint */}
+      {nearbySpots.length > 0 && (
+        <div className="bg-cream-200 rounded-xl px-4 py-3 flex items-start gap-3">
+          <svg className="shrink-0 text-green-600 mt-0.5" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+          </svg>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-ink-600 mb-1.5">Bons locais de encontro perto de você</p>
+            <div className="flex flex-wrap gap-2">
+              {nearbySpots.map(s => (
+                <span key={s.id} className="inline-flex items-center gap-1 text-xs bg-white border border-[#E7DDC4] rounded-lg px-2.5 py-1 text-ink-700">
+                  {SPOT_EMOJI[s.type] ?? '📍'} {s.name}
+                  {s.distKm != null && <span className="text-ink-300 ml-0.5">· {s.distKm} km</span>}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Radius filter — only show when user has location data */}
       {hasLocation && matches.length > 0 && (

@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
-import { initiateTrade, confirmTrade, cancelTrade } from './actions'
+import { initiateTrade, confirmTrade, cancelTrade, suggestSpot } from './actions'
 
 interface Message {
   id: string
@@ -34,6 +34,7 @@ interface TradeSpot {
   state_code: string
   lat: number
   lng: number
+  verified: boolean
   distanceKm: number | null
 }
 
@@ -66,6 +67,10 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
   const [text, setText]             = useState('')
   const [sending, setSending]       = useState(false)
   const [showSpots, setShowSpots]   = useState(false)
+  const [spotHintDismissed, setSpotHintDismissed] = useState(false)
+  const [showSuggestModal, setShowSuggestModal] = useState(false)
+  const [suggestForm, setSuggestForm] = useState({ name: '', type: 'cafeteria', address: '' })
+  const [suggestLoading, setSuggestLoading] = useState(false)
   const [hasMore, setHasMore]         = useState(initialHasMore)
   const [loadingMore, setLoadingMore] = useState(false)
   const [trade, setTrade]             = useState<Trade | null>(initialTrade)
@@ -245,6 +250,30 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
       setMessages(prev => prev.filter(m => m.id !== optimisticId))
     } finally {
       setSending(false)
+    }
+  }
+
+  async function handleSuggestSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!suggestForm.name.trim()) return
+    setSuggestLoading(true)
+    try {
+      await suggestSpot({
+        name:       suggestForm.name.trim(),
+        type:       suggestForm.type,
+        address:    suggestForm.address.trim() || null,
+        city_name:  otherUser.city ?? '',
+        state_code: '',
+        lat:        0,
+        lng:        0,
+      })
+      toast.success('Local sugerido! Obrigado 🙌')
+      setShowSuggestModal(false)
+      setSuggestForm({ name: '', type: 'cafeteria', address: '' })
+    } catch {
+      toast.error('Não foi possível enviar. Tente de novo.')
+    } finally {
+      setSuggestLoading(false)
     }
   }
 
@@ -503,7 +532,12 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
               >
                 <span className="text-lg shrink-0 mt-0.5">{SPOT_TYPE_LABEL[spot.type] ?? '📍'}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-ink-800 truncate">{spot.name}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-semibold text-ink-800 truncate">{spot.name}</p>
+                    {!spot.verified && (
+                      <span className="shrink-0 text-[10px] font-semibold text-ink-300 border border-[#E7DDC4] rounded px-1 py-px">sugerido</span>
+                    )}
+                  </div>
                   {spot.address && <p className="text-xs text-ink-400 truncate">{spot.address}</p>}
                   <p className="text-xs text-ink-300">
                     {spot.city_name}, {spot.state_code}
@@ -513,6 +547,44 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
               </button>
             ))
           )}
+          <button
+            onClick={() => setShowSuggestModal(true)}
+            className="w-full px-4 py-3 text-left text-xs text-green-600 font-semibold hover:bg-green-50 transition-colors border-t border-[#E7DDC4]"
+          >
+            + Sugerir novo local de encontro
+          </button>
+        </div>
+      )}
+
+      {/* Spot hint banner — show when spots exist and none sent yet */}
+      {tradeSpots.length > 0 &&
+        !showSpots &&
+        !spotHintDismissed &&
+        !messages.some(m => m.message_type === 'spot') && (
+        <div className="bg-green-50 border-t border-green-200 px-4 py-2.5 shrink-0 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <svg className="shrink-0 text-green-600" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+            <span className="text-xs text-green-800 font-medium truncate">Onde vão se encontrar para a troca?</span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setShowSpots(true)}
+              className="text-xs font-semibold text-green-700 hover:text-green-900 underline transition-colors"
+            >
+              Ver locais →
+            </button>
+            <button
+              onClick={() => setSpotHintDismissed(true)}
+              className="text-ink-300 hover:text-ink-500 transition-colors"
+              aria-label="Fechar"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
         </div>
       )}
 
@@ -578,6 +650,70 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
           </svg>
         </button>
       </div>
+
+      {/* Suggest spot modal */}
+      {showSuggestModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4 pb-4 sm:pb-0">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E7DDC4]">
+              <h3 className="font-display font-bold text-base text-ink-800">Sugerir local de encontro</h3>
+              <button onClick={() => setShowSuggestModal(false)} className="text-ink-300 hover:text-ink-600 transition-colors">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <form onSubmit={handleSuggestSubmit} className="p-5 flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-ink-600 mb-1.5">Nome do local *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Café do Centro, Parque da Cidade…"
+                  value={suggestForm.name}
+                  onChange={e => setSuggestForm(f => ({ ...f, name: e.target.value }))}
+                  className="w-full px-3 py-2.5 rounded-xl border border-[#E7DDC4] text-sm text-ink-800 outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-ink-600 mb-1.5">Tipo</label>
+                <select
+                  value={suggestForm.type}
+                  onChange={e => setSuggestForm(f => ({ ...f, type: e.target.value }))}
+                  className="w-full px-3 py-2.5 rounded-xl border border-[#E7DDC4] text-sm text-ink-800 outline-none focus:border-green-500 bg-white"
+                >
+                  <option value="cafeteria">☕ Cafeteria</option>
+                  <option value="shopping">🛍️ Shopping</option>
+                  <option value="parque">🌳 Parque</option>
+                  <option value="praca">🏛️ Praça</option>
+                  <option value="universidade">🎓 Universidade</option>
+                  <option value="biblioteca">📚 Biblioteca</option>
+                  <option value="mercado">🛒 Mercado</option>
+                  <option value="outro">📍 Outro</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-ink-600 mb-1.5">Endereço <span className="font-normal text-ink-300">(opcional)</span></label>
+                <input
+                  type="text"
+                  placeholder="Ex: Rua das Flores, 123"
+                  value={suggestForm.address}
+                  onChange={e => setSuggestForm(f => ({ ...f, address: e.target.value }))}
+                  className="w-full px-3 py-2.5 rounded-xl border border-[#E7DDC4] text-sm text-ink-800 outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20"
+                />
+              </div>
+              <p className="text-xs text-ink-400">O local ficará como "sugerido" até ser verificado pela equipe do trocai.</p>
+              <button
+                type="submit"
+                disabled={suggestLoading || !suggestForm.name.trim()}
+                className="w-full py-3 rounded-xl bg-green-500 text-white font-semibold text-sm hover:bg-green-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {suggestLoading ? 'Enviando…' : 'Enviar sugestão'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

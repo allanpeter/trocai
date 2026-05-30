@@ -20,11 +20,11 @@ export default async function MatchesPage({ searchParams }: Props) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('city, city_name, state_code')
+    .select('city, city_name, state_code, lat, lng')
     .eq('id', user.id)
     .single()
 
-  const [{ data: matches, error }, { data: existingChats }] = await Promise.all([
+  const [{ data: matches, error }, { data: existingChats }, { data: rawNearbySpots }] = await Promise.all([
     supabase.rpc('find_matches_v2', {
       p_user_id:   user.id,
       p_album_id:  COPA_ALBUM_ID,
@@ -35,6 +35,15 @@ export default async function MatchesPage({ searchParams }: Props) {
       .from('chats')
       .select('id, user1_id, user2_id')
       .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`),
+    profile?.state_code
+      ? supabase
+          .from('trade_spots')
+          .select('id, name, type, city_name, state_code, lat, lng')
+          .eq('state_code', profile.state_code)
+          .order('verified',  { ascending: false })
+          .order('popularity', { ascending: false })
+          .limit(20)
+      : Promise.resolve({ data: [] as { id: string; name: string; type: string; city_name: string; state_code: string; lat: number; lng: number }[] }),
   ])
 
   // Map otherUserId → chatId for quick lookup in cards
@@ -45,8 +54,21 @@ export default async function MatchesPage({ searchParams }: Props) {
     ])
   )
 
-  const userCity = profile?.city_name ?? profile?.city ?? null
+  const userCity  = profile?.city_name ?? profile?.city ?? null
   const userState = safeStateCode(profile?.state_code) ?? null
+
+  // Pick up to 3 spots nearest to the current user
+  const userLat = profile?.lat ?? null
+  const userLng = profile?.lng ?? null
+  const nearbySpots = (rawNearbySpots ?? [])
+    .map(s => {
+      const distKm = userLat != null && userLng != null
+        ? Math.round(Math.sqrt((s.lat - userLat) ** 2 + (s.lng - userLng) ** 2) * 111)
+        : null
+      return { ...s, distKm }
+    })
+    .sort((a, b) => (a.distKm ?? 9999) - (b.distKm ?? 9999))
+    .slice(0, 3)
 
   return (
     <MatchesList
@@ -56,6 +78,7 @@ export default async function MatchesPage({ searchParams }: Props) {
       hasError={!!error}
       activeRadius={radiusKm}
       chatByUser={chatByUser}
+      nearbySpots={nearbySpots}
     />
   )
 }

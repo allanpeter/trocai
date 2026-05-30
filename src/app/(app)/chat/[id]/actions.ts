@@ -62,6 +62,27 @@ export async function confirmTrade(tradeId: string, chatId: string) {
   })
 }
 
+export async function suggestSpot(spot: {
+  name: string
+  type: string
+  address: string | null
+  city_name: string
+  state_code: string
+  lat: number
+  lng: number
+}) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Não autenticado')
+
+  const { error } = await supabase.from('trade_spots').insert({
+    ...spot,
+    verified:   false,
+    created_by: user.id,
+  })
+  if (error) throw error
+}
+
 export async function cancelTrade(tradeId: string, chatId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
