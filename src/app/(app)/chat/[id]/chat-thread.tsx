@@ -24,6 +24,7 @@ interface OtherUser {
   avatar_url: string | null
   city: string | null
   city_name?: string | null
+  state_code?: string | null
 }
 
 interface TradeSpot {
@@ -98,51 +99,77 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
   // Effective spot list: prefer DB spots; fall back to live Overpass results
   const effectiveSpots = tradeSpots.length > 0 ? tradeSpots : liveSpots
 
-  // When no DB spots are available, fetch from Overpass client-side (non-blocking)
+  // When no DB spots are available, fetch from Overpass client-side (non-blocking).
+  // Priority: use own coords → partner's coords → geocode city name via Nominatim.
   useEffect(() => {
-    if (tradeSpots.length > 0 || myLat == null || myLng == null) return
+    if (tradeSpots.length > 0) return
 
-    const midLat = otherLat != null ? (myLat + otherLat) / 2 : myLat
-    const midLng = otherLng != null ? (myLng + otherLng) / 2 : myLng
-    const osmQuery = `[out:json][timeout:8];(node["amenity"~"cafe|library"]["name"](around:5000,${midLat},${midLng});node["leisure"="park"]["name"](around:5000,${midLat},${midLng});way["shop"="mall"]["name"](around:5000,${midLat},${midLng}););out center 6;`
-
-    setLoadingSpots(true)
-    fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      body: `data=${encodeURIComponent(osmQuery)}`,
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'trocai/1.0' },
-      signal: AbortSignal.timeout(8000),
-    })
-      .then(res => res.ok ? res.json() : null)
-      .then(json => {
-        if (!json) return
-        const amenityToType: Record<string, string> = { cafe: 'cafeteria', library: 'biblioteca' }
-        type OsmEl = { id: number; lat?: number; lon?: number; center?: { lat: number; lon: number }; tags: Record<string, string> }
-        const spots: TradeSpot[] = ((json.elements ?? []) as OsmEl[])
-          .filter(el => el.tags?.name && (el.lat ?? el.center?.lat))
-          .slice(0, 6)
-          .map(el => {
-            const spotLat = el.lat ?? el.center!.lat
-            const spotLng = el.lon ?? el.center!.lon
-            const distanceKm = Math.round(haversineKm(midLat, midLng, spotLat, spotLng))
-            return {
-              id: `osm-${el.id}`,
-              name: el.tags.name,
-              type: amenityToType[el.tags.amenity] ?? (el.tags.leisure === 'park' ? 'parque' : 'shopping'),
-              address: null,
-              city_name: otherUser.city_name ?? otherUser.city ?? '',
-              state_code: '',
-              lat: spotLat,
-              lng: spotLng,
-              verified: false,
-              distanceKm,
-            }
-          })
-          .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999))
-        setLiveSpots(spots)
+    async function fetchOverpassSpots(centerLat: number, centerLng: number) {
+      const midLat = myLat != null && otherLat != null ? (myLat + otherLat) / 2 : centerLat
+      const midLng = myLng != null && otherLng != null ? (myLng + otherLng) / 2 : centerLng
+      const osmQuery = `[out:json][timeout:8];(node["amenity"~"cafe|library"]["name"](around:5000,${midLat},${midLng});node["leisure"="park"]["name"](around:5000,${midLat},${midLng});way["shop"="mall"]["name"](around:5000,${midLat},${midLng}););out center 6;`
+      const res = await fetch('https://overpass-api.de/api/interpreter', {
+        method: 'POST',
+        body: `data=${encodeURIComponent(osmQuery)}`,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'trocai/1.0' },
+        signal: AbortSignal.timeout(8000),
       })
-      .catch(() => { /* silently — chat works without spots */ })
-      .finally(() => setLoadingSpots(false))
+      if (!res.ok) return
+      const json = await res.json()
+      const amenityToType: Record<string, string> = { cafe: 'cafeteria', library: 'biblioteca' }
+      type OsmEl = { id: number; lat?: number; lon?: number; center?: { lat: number; lon: number }; tags: Record<string, string> }
+      const spots: TradeSpot[] = ((json.elements ?? []) as OsmEl[])
+        .filter(el => el.tags?.name && (el.lat ?? el.center?.lat))
+        .slice(0, 6)
+        .map(el => {
+          const spotLat = el.lat ?? el.center!.lat
+          const spotLng = el.lon ?? el.center!.lon
+          const distanceKm = Math.round(haversineKm(midLat, midLng, spotLat, spotLng))
+          return {
+            id: `osm-${el.id}`,
+            name: el.tags.name,
+            type: amenityToType[el.tags.amenity] ?? (el.tags.leisure === 'park' ? 'parque' : 'shopping'),
+            address: null,
+            city_name: otherUser.city_name ?? otherUser.city ?? '',
+            state_code: otherUser.state_code ?? '',
+            lat: spotLat,
+            lng: spotLng,
+            verified: false,
+            distanceKm,
+          }
+        })
+        .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999))
+      setLiveSpots(spots)
+    }
+
+    async function run() {
+      setLoadingSpots(true)
+      try {
+        // Use own coords, else partner's coords, else geocode city name
+        const centerLat = myLat ?? otherLat
+        const centerLng = myLng ?? otherLng
+
+        if (centerLat != null && centerLng != null) {
+          await fetchOverpassSpots(centerLat, centerLng)
+          return
+        }
+
+        // No coords at all — try Nominatim geocoding from city name
+        const cityName = otherUser.city_name ?? otherUser.city
+        if (!cityName) return
+        const geoRes = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityName + ', Brasil')}&format=json&limit=1`,
+          { headers: { 'User-Agent': 'trocai/1.0' }, signal: AbortSignal.timeout(5000) }
+        )
+        if (!geoRes.ok) return
+        const geoData = await geoRes.json()
+        if (!geoData?.[0]) return
+        await fetchOverpassSpots(parseFloat(geoData[0].lat), parseFloat(geoData[0].lon))
+      } catch { /* silently — chat works without spots */ }
+      finally { setLoadingSpots(false) }
+    }
+
+    run()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -324,14 +351,21 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
     if (!suggestForm.name.trim()) return
     setSuggestLoading(true)
     try {
+      // Use midpoint of users as approximate location; fall back to center of partner's city
+      const approxLat = myLat != null && otherLat != null
+        ? (myLat + otherLat) / 2
+        : (myLat ?? otherLat ?? 0)
+      const approxLng = myLng != null && otherLng != null
+        ? (myLng + otherLng) / 2
+        : (myLng ?? otherLng ?? 0)
       await suggestSpot({
         name:       suggestForm.name.trim(),
         type:       suggestForm.type,
         address:    suggestForm.address.trim() || null,
-        city_name:  otherUser.city ?? '',
-        state_code: '',
-        lat:        0,
-        lng:        0,
+        city_name:  otherUser.city_name ?? otherUser.city ?? '',
+        state_code: otherUser.state_code ?? '',
+        lat:        approxLat,
+        lng:        approxLng,
       })
       toast.success('Local sugerido! Obrigado 🙌')
       setShowSuggestModal(false)

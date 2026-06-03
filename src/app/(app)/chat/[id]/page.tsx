@@ -80,7 +80,7 @@ export default async function ChatThreadPage({ params }: Props) {
 
   const orderedMessages = (messages ?? []).slice().reverse()
 
-  const otherUserData = otherProfile ?? { id: otherId, username: 'Usuário', avatar_url: null, city: null, city_name: null }
+  const otherUserData = otherProfile ?? { id: otherId, username: 'Usuário', avatar_url: null, city: null, city_name: null, state_code: null }
 
   return (
     <ChatThread
