@@ -90,14 +90,17 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
   const [trade, setTrade]             = useState<Trade | null>(initialTrade)
   const [tradeLoading, setTradeLoading] = useState(false)
   const [liveSpots, setLiveSpots]     = useState<TradeSpot[]>([])
+  const [suggestedSpots, setSuggestedSpots] = useState<TradeSpot[]>([])
   const [loadingSpots, setLoadingSpots] = useState(false)
   const [, startTransition]           = useTransition()
   const bottomRef  = useRef<HTMLDivElement>(null)
   const inputRef   = useRef<HTMLInputElement>(null)
   const scrollRef  = useRef<HTMLDivElement>(null)
 
-  // Effective spot list: prefer DB spots; fall back to live Overpass results
-  const effectiveSpots = tradeSpots.length > 0 ? tradeSpots : liveSpots
+  // Effective spot list: DB spots (or Overpass fallback) + locally suggested spots
+  const effectiveSpots = [...(tradeSpots.length > 0 ? tradeSpots : liveSpots), ...suggestedSpots]
+
+  const hasCityInfo = !!(myLat ?? otherLat ?? otherUser.city ?? otherUser.city_name)
 
   // When no DB spots are available, fetch from Overpass client-side (non-blocking).
   // Priority: use own coords → partner's coords → geocode city name via Nominatim.
@@ -351,23 +354,63 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
     if (!suggestForm.name.trim()) return
     setSuggestLoading(true)
     try {
-      // Use midpoint of users as approximate location; fall back to center of partner's city
-      const approxLat = myLat != null && otherLat != null
-        ? (myLat + otherLat) / 2
-        : (myLat ?? otherLat ?? 0)
-      const approxLng = myLng != null && otherLng != null
-        ? (myLng + otherLng) / 2
-        : (myLng ?? otherLng ?? 0)
+      const cityName  = otherUser.city_name ?? otherUser.city ?? ''
+      const stateName = otherUser.state_code ?? ''
+
+      // Try to geocode address or city via Nominatim for accurate coordinates
+      let finalLat: number
+      let finalLng: number
+      const geocodeQuery = suggestForm.address.trim()
+        ? `${suggestForm.address.trim()}, ${cityName}, Brasil`
+        : cityName ? `${cityName}, Brasil` : null
+
+      let geocoded: { lat: number; lng: number } | null = null
+      if (geocodeQuery) {
+        try {
+          const geoRes = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(geocodeQuery)}&format=json&limit=1`,
+            { headers: { 'User-Agent': 'trocai/1.0' }, signal: AbortSignal.timeout(5000) }
+          )
+          if (geoRes.ok) {
+            const geoData = await geoRes.json()
+            if (geoData?.[0]) geocoded = { lat: parseFloat(geoData[0].lat), lng: parseFloat(geoData[0].lon) }
+          }
+        } catch { /* geocoding optional — fall back to midpoint */ }
+      }
+
+      finalLat = geocoded?.lat ?? (myLat != null && otherLat != null ? (myLat + otherLat) / 2 : (myLat ?? otherLat ?? 0))
+      finalLng = geocoded?.lng ?? (myLng != null && otherLng != null ? (myLng + otherLng) / 2 : (myLng ?? otherLng ?? 0))
+
       await suggestSpot({
         name:       suggestForm.name.trim(),
         type:       suggestForm.type,
         address:    suggestForm.address.trim() || null,
-        city_name:  otherUser.city_name ?? otherUser.city ?? '',
-        state_code: otherUser.state_code ?? '',
-        lat:        approxLat,
-        lng:        approxLng,
+        city_name:  cityName,
+        state_code: stateName,
+        lat:        finalLat,
+        lng:        finalLng,
       })
-      toast.success('Local sugerido! Obrigado 🙌')
+
+      // Show the new spot immediately without waiting for a page reload
+      const centerLat = myLat ?? otherLat ?? finalLat
+      const centerLng = myLng ?? otherLng ?? finalLng
+      const distanceKm = finalLat !== 0
+        ? Math.round(haversineKm(centerLat, centerLng, finalLat, finalLng))
+        : null
+      setSuggestedSpots(prev => [...prev, {
+        id:         `suggested-${Date.now()}`,
+        name:       suggestForm.name.trim(),
+        type:       suggestForm.type,
+        address:    suggestForm.address.trim() || null,
+        city_name:  cityName,
+        state_code: stateName,
+        lat:        finalLat,
+        lng:        finalLng,
+        verified:   false,
+        distanceKm,
+      }])
+
+      toast.success('Local sugerido! Já aparece na lista.')
       setShowSuggestModal(false)
       setSuggestForm({ name: '', type: 'cafeteria', address: '' })
     } catch {
@@ -804,13 +847,23 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
                   className="w-full px-3 py-2.5 rounded-xl border border-[#E7DDC4] text-sm text-ink-800 outline-none focus:border-green-500 focus:ring-4 focus:ring-green-500/20"
                 />
               </div>
+              {!hasCityInfo && (
+                <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                  <svg className="shrink-0 text-amber-500 mt-0.5" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                  <p className="text-xs text-amber-700">
+                    Adicione sua cidade no perfil para que o local seja localizado corretamente no mapa.
+                  </p>
+                </div>
+              )}
               <p className="text-xs text-ink-400">O local ficará como "sugerido" até ser verificado pela equipe do trocai.</p>
               <button
                 type="submit"
                 disabled={suggestLoading || !suggestForm.name.trim()}
                 className="w-full py-3 rounded-xl bg-green-500 text-white font-semibold text-sm hover:bg-green-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {suggestLoading ? 'Enviando…' : 'Enviar sugestão'}
+                {suggestLoading ? 'Localizando e enviando…' : 'Enviar sugestão'}
               </button>
             </form>
           </div>
