@@ -17,6 +17,9 @@ export const metadata: Metadata = {
 function StickerCard({ src, alt, style, rare, priority }: {
   src: string; alt: string; style?: React.CSSProperties; rare?: boolean; priority?: boolean
 }) {
+  // Automatically use .webp version if available
+  const webpSrc = src.replace(/\.(jpg|jpeg)$/i, '.webp');
+
   return (
     <div
       className="absolute rounded-[14px] overflow-hidden transition-all duration-300 hover:scale-[1.06] hover:-translate-y-1.5 cursor-pointer"
@@ -27,7 +30,10 @@ function StickerCard({ src, alt, style, rare, priority }: {
         ...style,
       }}
     >
-      <Image src={src} alt={alt} width={160} height={224} className="w-full object-cover block" priority={priority} />
+      <picture>
+        <source srcSet={webpSrc} type="image/webp" />
+        <Image src={src} alt={alt} width={160} height={224} className="w-full object-cover block" priority={priority} />
+      </picture>
     </div>
   )
 }

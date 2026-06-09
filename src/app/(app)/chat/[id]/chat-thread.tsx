@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import { fetchWithRetry } from '@/lib/api-retry'
 import { initiateTrade, confirmTrade, cancelTrade, suggestSpot } from './actions'
 
 interface Message {
@@ -111,38 +112,46 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
       const midLat = myLat != null && otherLat != null ? (myLat + otherLat) / 2 : centerLat
       const midLng = myLng != null && otherLng != null ? (myLng + otherLng) / 2 : centerLng
       const osmQuery = `[out:json][timeout:8];(node["amenity"~"cafe|library"]["name"](around:5000,${midLat},${midLng});node["leisure"="park"]["name"](around:5000,${midLat},${midLng});way["shop"="mall"]["name"](around:5000,${midLat},${midLng}););out center 6;`
-      const res = await fetch('https://overpass-api.de/api/interpreter', {
-        method: 'POST',
-        body: `data=${encodeURIComponent(osmQuery)}`,
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'trocai/1.0' },
-        signal: AbortSignal.timeout(8000),
-      })
-      if (!res.ok) return
-      const json = await res.json()
-      const amenityToType: Record<string, string> = { cafe: 'cafeteria', library: 'biblioteca' }
-      type OsmEl = { id: number; lat?: number; lon?: number; center?: { lat: number; lon: number }; tags: Record<string, string> }
-      const spots: TradeSpot[] = ((json.elements ?? []) as OsmEl[])
-        .filter(el => el.tags?.name && (el.lat ?? el.center?.lat))
-        .slice(0, 6)
-        .map(el => {
-          const spotLat = el.lat ?? el.center!.lat
-          const spotLng = el.lon ?? el.center!.lon
-          const distanceKm = Math.round(haversineKm(midLat, midLng, spotLat, spotLng))
-          return {
-            id: `osm-${el.id}`,
-            name: el.tags.name,
-            type: amenityToType[el.tags.amenity] ?? (el.tags.leisure === 'park' ? 'parque' : 'shopping'),
-            address: null,
-            city_name: otherUser.city_name ?? otherUser.city ?? '',
-            state_code: otherUser.state_code ?? '',
-            lat: spotLat,
-            lng: spotLng,
-            verified: false,
-            distanceKm,
-          }
+      try {
+        const res = await fetchWithRetry('https://overpass-api.de/api/interpreter', {
+          method: 'POST',
+          body: `data=${encodeURIComponent(osmQuery)}`,
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'trocai/1.0' },
+          timeout: 12000,
+          maxRetries: 2,
         })
-        .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999))
-      setLiveSpots(spots)
+        if (!res.ok) {
+          console.error('[Overpass] Failed:', res.status)
+          return
+        }
+        const json = await res.json()
+        const amenityToType: Record<string, string> = { cafe: 'cafeteria', library: 'biblioteca' }
+        type OsmEl = { id: number; lat?: number; lon?: number; center?: { lat: number; lon: number }; tags: Record<string, string> }
+        const spots: TradeSpot[] = ((json.elements ?? []) as OsmEl[])
+          .filter(el => el.tags?.name && (el.lat ?? el.center?.lat))
+          .slice(0, 6)
+          .map(el => {
+            const spotLat = el.lat ?? el.center!.lat
+            const spotLng = el.lon ?? el.center!.lon
+            const distanceKm = Math.round(haversineKm(midLat, midLng, spotLat, spotLng))
+            return {
+              id: `osm-${el.id}`,
+              name: el.tags.name,
+              type: amenityToType[el.tags.amenity] ?? (el.tags.leisure === 'park' ? 'parque' : 'shopping'),
+              address: null,
+              city_name: otherUser.city_name ?? otherUser.city ?? '',
+              state_code: otherUser.state_code ?? '',
+              lat: spotLat,
+              lng: spotLng,
+              verified: false,
+              distanceKm,
+            }
+          })
+          .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999))
+        setLiveSpots(spots)
+      } catch (error) {
+        console.error('[Overpass] Error fetching spots:', error instanceof Error ? error.message : String(error))
+      }
     }
 
     async function run() {
@@ -160,19 +169,28 @@ export function ChatThread({ chatId, currentUserId, otherUser, initialMessages, 
         // No coords at all — try Nominatim geocoding from city name
         const cityName = otherUser.city_name ?? otherUser.city
         if (!cityName) return
-        const geoRes = await fetch(
+        const geoRes = await fetchWithRetry(
           `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityName + ', Brasil')}&format=json&limit=1`,
-          { headers: { 'User-Agent': 'trocai/1.0' }, signal: AbortSignal.timeout(5000) }
+          { headers: { 'User-Agent': 'trocai/1.0' }, timeout: 8000, maxRetries: 2 }
         )
-        if (!geoRes.ok) return
+        if (!geoRes.ok) {
+          console.error('[Nominatim] Geocoding failed:', geoRes.status)
+          return
+        }
         const geoData = await geoRes.json()
-        if (!geoData?.[0]) return
+        if (!geoData?.[0]) {
+          console.warn('[Nominatim] No results for:', cityName)
+          return
+        }
         await fetchOverpassSpots(parseFloat(geoData[0].lat), parseFloat(geoData[0].lon))
-      } catch { /* silently — chat works without spots */ }
-      finally { setLoadingSpots(false) }
+      } finally {
+        setLoadingSpots(false)
+      }
     }
 
-    run()
+    run().catch(error => {
+      console.error('[ChatThread] Error loading spots:', error instanceof Error ? error.message : String(error))
+    })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

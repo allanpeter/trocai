@@ -6,6 +6,15 @@ interface Props {
   params: Promise<{ id: string }>
 }
 
+interface RawSticker {
+  id: string
+  number: number
+  code: string | null
+  name: string | null
+  team: string | null
+  is_rare: boolean
+}
+
 export default async function AlbumPage({ params }: Props) {
   const { id } = await params
   const supabase = await createClient()
@@ -39,14 +48,13 @@ export default async function AlbumPage({ params }: Props) {
     (userStickers ?? []).map(us => [us.sticker_id, { status: us.status, quantity: us.quantity }])
   )
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const stickerList = (stickers ?? []).map((s: any) => ({
-    id:       s.id as string,
-    number:   s.number as number,
-    code:     (s.code ?? null) as string | null,
-    name:     s.name as string | null,
-    team:     s.team as string | null,
-    is_rare:  s.is_rare as boolean,
+  const stickerList = (stickers ?? [] as RawSticker[]).map(s => ({
+    id:       s.id,
+    number:   s.number,
+    code:     s.code,
+    name:     s.name,
+    team:     s.team,
+    is_rare:  s.is_rare,
     status:   statusMap.get(s.id)?.status ?? null,
     quantity: statusMap.get(s.id)?.quantity ?? 1,
   }))

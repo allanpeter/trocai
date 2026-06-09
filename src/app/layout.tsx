@@ -40,11 +40,18 @@ export const metadata: Metadata = {
     siteName: 'trocai',
     title: 'trocai — Bora trocar figurinhas?',
     description: 'Encontra quem mora perto e tem as figurinhas que você precisa. Copa do Mundo 2026.',
+    images: [{
+      url: '/og-image.png',
+      width: 1200,
+      height: 630,
+      alt: 'trocai — Troca figurinhas da Copa 2026',
+    }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'trocai — Bora trocar figurinhas?',
     description: 'Encontra quem mora perto e tem as figurinhas que você precisa.',
+    images: '/twitter-image.png',
   },
   icons: {
     icon: [
@@ -67,6 +74,33 @@ const websiteSchema = {
   inLanguage: 'pt-BR',
 }
 
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'trocai',
+  url: 'https://www.trocai.app',
+  logo: 'https://www.trocai.app/logo/trocai-logo.svg',
+  description: 'Plataforma que conecta colecionadores de figurinhas da Copa 2026.',
+  areaServed: 'BR',
+  contactPoint: {
+    '@type': 'ContactPoint',
+    contactType: 'Customer Support',
+    email: 'contato@trocai.app',
+  },
+  sameAs: ['https://discord.gg/trocai'],
+}
+
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Início', item: 'https://www.trocai.app' },
+    { '@type': 'ListItem', position: 2, name: 'Sobre', item: 'https://www.trocai.app/about' },
+    { '@type': 'ListItem', position: 3, name: 'FAQ', item: 'https://www.trocai.app/faq' },
+    { '@type': 'ListItem', position: 4, name: 'Guia', item: 'https://www.trocai.app/guia' },
+  ],
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const adsenseId = process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID
   return (
@@ -75,6 +109,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
         />
         {children}
         <Toaster richColors position="top-right" />
