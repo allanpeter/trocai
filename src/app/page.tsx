@@ -108,7 +108,8 @@ export default async function LandingPage() {
           </Link>
           <nav className="hidden md:flex items-center gap-6 ml-6">
             <a href="#como" className="text-sm font-medium text-ink-700 hover:text-green-600 transition-colors">Como funciona</a>
-            <a href="#numeros" className="text-sm font-medium text-ink-700 hover:text-green-600 transition-colors">Números</a>
+            <Link href="/guia" className="text-sm font-medium text-ink-700 hover:text-green-600 transition-colors">Guia</Link>
+            <Link href="/blog" className="text-sm font-medium text-ink-700 hover:text-green-600 transition-colors">Blog</Link>
             <a href="#faq" className="text-sm font-medium text-ink-700 hover:text-green-600 transition-colors">FAQ</a>
           </nav>
           <div className="ml-auto flex items-center gap-2">

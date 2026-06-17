@@ -62,8 +62,9 @@ export default async function AboutPage() {
           </Link>
           <nav className="hidden md:flex items-center gap-6 ml-6">
             <Link href="/" className="text-sm font-medium text-ink-700 hover:text-green-600 transition-colors">Início</Link>
-            <Link href="/faq" className="text-sm font-medium text-ink-700 hover:text-green-600 transition-colors">FAQ</Link>
             <Link href="/guia" className="text-sm font-medium text-ink-700 hover:text-green-600 transition-colors">Guia</Link>
+            <Link href="/blog" className="text-sm font-medium text-ink-700 hover:text-green-600 transition-colors">Blog</Link>
+            <Link href="/faq" className="text-sm font-medium text-ink-700 hover:text-green-600 transition-colors">FAQ</Link>
           </nav>
           <div className="ml-auto">
             <Link href="/login" className="text-sm font-semibold px-4 py-2 rounded-[10px] text-ink-700 hover:bg-cream-200 transition-colors">

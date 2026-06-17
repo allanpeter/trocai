@@ -56,7 +56,6 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: '/logo/trocai-mark.svg', type: 'image/svg+xml' },
-      { url: '/favicon.ico' },
     ],
     apple: '/logo/trocai-mark.svg',
   },

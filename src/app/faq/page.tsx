@@ -44,6 +44,35 @@ const FAQS = [
     q: 'O app tem app nativo para iOS ou Android?',
     a: 'Ainda não. O trocai funciona pelo navegador e é otimizado para mobile. Estamos avaliando o desenvolvimento de um app nativo no futuro.',
   },
+  {
+    q: 'Como o trocai encontra pessoas perto de mim?',
+    a: 'Ao cadastrar seu álbum, você define sua localização aproximada. O sistema cruza seu álbum com o de colecionadores próximos e ordena os matches por distância. Você pode filtrar por raio (por exemplo, 10 km, 30 km ou 100 km) para encontrar quem está mais perto.',
+  },
+  {
+    q: 'Quanto custa completar o álbum da Copa 2026?',
+    a: 'Depende do número total de figurinhas, de quantas vêm por pacote e do preço na sua região. O grande detalhe é que as últimas figurinhas são as mais caras de conseguir só com pacote, porque a maioria vem repetida. Por isso a troca economiza tanto. Explicamos a conta completa no blog.',
+    link: { href: '/blog/quanto-custa-completar-album-copa-2026', label: 'Quanto custa completar o álbum' },
+  },
+  {
+    q: 'Como sei o valor de uma figurinha numa troca?',
+    a: 'Figurinhas especiais (douradas, brilhantes) e de craques famosos são as mais disputadas e costumam valer mais numa troca. Uma figurinha rara pode valer duas ou três comuns numa negociação justa. Temos um artigo dedicado às figurinhas mais raras do álbum.',
+    link: { href: '/blog/figurinhas-mais-raras-album-copa-2026', label: 'As figurinhas mais raras' },
+  },
+  {
+    q: 'Como sei se uma figurinha é falsa?',
+    a: 'Observe a qualidade da impressão, o acabamento das especiais, a numeração, as fontes e o tipo de papel. Falsas costumam ter cores borradas, brilho irregular e papel diferente. Desconfie de douradas vendidas muito baratas. Reunimos todos os sinais num guia.',
+    link: { href: '/blog/como-identificar-figurinhas-falsas', label: 'Como identificar figurinhas falsas' },
+  },
+  {
+    q: 'É seguro fazer trocas presenciais?',
+    a: 'Sim, desde que você tome alguns cuidados: marque sempre em local público e movimentado, combine os detalhes por escrito antes e confira as figurinhas com calma na hora. No caso de crianças, sempre com acompanhamento de um adulto.',
+    link: { href: '/blog/seguranca-trocas-presenciais', label: 'Guia de segurança nas trocas' },
+  },
+  {
+    q: 'Sou iniciante e nunca colecionei. Por onde começo?',
+    a: 'Comece pelo álbum e alguns pacotes, separe as repetidas desde o primeiro dia e anote o que falta. Quando juntar repetidas suficientes, é hora de trocar. Temos um guia para iniciantes que cobre tudo passo a passo.',
+    link: { href: '/blog/guia-iniciantes-colecao-copa-2026', label: 'Guia para iniciantes' },
+  },
 ]
 
 export default function FaqPage() {
@@ -69,6 +98,8 @@ export default function FaqPage() {
             <Image src="/logo/trocai-logo.svg" width={160} height={48} alt="trocai" priority />
           </Link>
           <nav className="flex items-center gap-6 text-sm font-medium text-ink-500 ml-auto">
+            <Link href="/guia" className="hover:text-ink-800 transition-colors">Guia</Link>
+            <Link href="/blog" className="hover:text-ink-800 transition-colors">Blog</Link>
             <Link href="/contato" className="hover:text-ink-800 transition-colors">Contato</Link>
             <Link href="/login" className="hover:text-ink-800 transition-colors">Entrar</Link>
           </nav>

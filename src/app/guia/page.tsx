@@ -99,6 +99,7 @@ export default function GuiaPage() {
             <Image src="/logo/trocai-logo.svg" width={160} height={48} alt="trocai" priority />
           </Link>
           <nav className="flex items-center gap-6 text-sm font-medium text-ink-500 ml-auto">
+            <Link href="/blog" className="hover:text-ink-800 transition-colors">Blog</Link>
             <Link href="/faq" className="hover:text-ink-800 transition-colors">FAQ</Link>
             <Link href="/login" className="hover:text-ink-800 transition-colors">Entrar</Link>
             <Link
@@ -162,6 +163,25 @@ export default function GuiaPage() {
             </section>
           ))}
         </div>
+
+        {/* Leia mais */}
+        <section className="mt-16">
+          <h2 className="font-display font-bold text-2xl tracking-tight mb-6">Continue aprendendo</h2>
+          <div className="grid sm:grid-cols-2 gap-5">
+            <Link href="/blog/quanto-custa-completar-album-copa-2026" className="bg-white border border-[#E7DDC4] rounded-2xl p-5 shadow-[var(--sh-1)] hover:shadow-[var(--sh-3)] hover:-translate-y-0.5 transition-all duration-200">
+              <p className="font-display font-bold text-lg leading-snug">Quanto custa completar o álbum da Copa 2026?</p>
+            </Link>
+            <Link href="/blog/figurinhas-mais-raras-album-copa-2026" className="bg-white border border-[#E7DDC4] rounded-2xl p-5 shadow-[var(--sh-1)] hover:shadow-[var(--sh-3)] hover:-translate-y-0.5 transition-all duration-200">
+              <p className="font-display font-bold text-lg leading-snug">As figurinhas mais raras do álbum</p>
+            </Link>
+            <Link href="/blog/seguranca-trocas-presenciais" className="bg-white border border-[#E7DDC4] rounded-2xl p-5 shadow-[var(--sh-1)] hover:shadow-[var(--sh-3)] hover:-translate-y-0.5 transition-all duration-200">
+              <p className="font-display font-bold text-lg leading-snug">Segurança em trocas presenciais</p>
+            </Link>
+            <Link href="/blog" className="bg-white border border-[#E7DDC4] rounded-2xl p-5 shadow-[var(--sh-1)] hover:shadow-[var(--sh-3)] hover:-translate-y-0.5 transition-all duration-200 flex items-center">
+              <p className="font-display font-bold text-lg leading-snug text-green-700">Ver todos os artigos →</p>
+            </Link>
+          </div>
+        </section>
 
         {/* CTA */}
         <div className="mt-16 bg-green-500 text-white rounded-3xl p-10 text-center">
