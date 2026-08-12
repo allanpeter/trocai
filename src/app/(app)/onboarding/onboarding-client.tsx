@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { CityAutocomplete } from '@/components/city-autocomplete'
 import type { CitySelection } from '@/components/city-autocomplete'
 import type { Album } from '@/lib/types'
+import { trackEvent } from '@/lib/analytics'
 
 interface Props {
   userId: string
@@ -47,6 +48,7 @@ export function OnboardingClient({ userId, albums }: Props) {
           .eq('id', userId)
         if (error) throw error
       }
+      trackEvent('onboarding_completed')
       router.push(`/album/${selectedAlbum}`)
       router.refresh()
     } catch {

@@ -53,6 +53,7 @@ export default function PrivacidadePage() {
             <li><strong>Dados de perfil:</strong> nome de usuário, cidade/estado e foto de perfil (opcionais, informados por você).</li>
             <li><strong>Dados do álbum:</strong> quais figurinhas você marcou como tendo, faltando ou repetidas.</li>
             <li><strong>Dados de uso:</strong> páginas visitadas, interações e logs de acesso, coletados automaticamente para segurança e melhoria do serviço.</li>
+            <li><strong>Métricas de produto:</strong> pageviews, desempenho e eventos agregados de cadastro e onboarding, medidos pelo Umami hospedado por nós, sem cookies de analytics e sem dados pessoais nos eventos.</li>
             <li><strong>Cookies e tecnologias similares:</strong> utilizados para manter a sessão ativa e exibir publicidade personalizada (detalhes na seção 5).</li>
           </ul>
           <p>Não coletamos documentos de identidade, dados bancários ou localização em tempo real.</p>

@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { trackEvent } from '@/lib/analytics'
 
 function GoogleIcon() {
   return (
@@ -88,6 +89,7 @@ export default function SignupPage() {
       }
 
       if (data.session) {
+        trackEvent('signup_completed')
         router.push('/onboarding')
         router.refresh()
       } else {

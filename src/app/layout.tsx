@@ -105,6 +105,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR" className={`${bricolage.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}>
       <body className="antialiased">
+        <Script
+          src="https://analytics.apps.allanpimentel.com/script.js"
+          data-website-id="cab931ab-a79b-4811-a98b-9e5efd04ae8f"
+          data-domains="trocai.app,www.trocai.app"
+          data-do-not-track="true"
+          data-performance="true"
+          strategy="afterInteractive"
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
